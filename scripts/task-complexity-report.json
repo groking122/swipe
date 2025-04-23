@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "generatedAt": "2025-04-23T10:17:02.758Z",
+    "tasksAnalyzed": 10,
+    "thresholdScore": 5,
+    "projectName": "Your Project Name",
+    "usedResearch": false
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Setup Project Foundation",
+      "complexityScore": 5,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the Next.js project setup into specific subtasks covering initialization, folder structure creation, configuration of development tools, and deployment pipeline setup.",
+      "reasoning": "This task involves multiple technical components including Next.js initialization, TypeScript configuration, Tailwind setup, project structure organization, and Vercel deployment. While each component is well-documented, coordinating them requires moderate complexity."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Implement Authentication with Clerk",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide the Clerk authentication implementation into subtasks covering SDK installation, provider setup, UI component creation, middleware implementation, Supabase synchronization, and custom hook development.",
+      "reasoning": "Authentication is inherently complex, requiring secure implementation across multiple systems. This task involves third-party integration (Clerk), multiple auth providers, middleware for protected routes, and synchronization with Supabase, making it significantly complex."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Set up Supabase Database and Storage",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down the Supabase setup into subtasks covering project initialization, schema creation for each table, row-level security implementation, storage bucket configuration, index creation, and application integration.",
+      "reasoning": "Database design and security implementation require careful planning. This task involves creating multiple tables with relationships, implementing row-level security, configuring storage with appropriate permissions, and optimizing performance with indexes."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Develop Swipe Interface for Meme Browsing",
+      "complexityScore": 8,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide the swipe interface development into subtasks covering library integration, card component creation, animation implementation, feed page development, pagination/infinite scroll, and visual feedback mechanisms.",
+      "reasoning": "This is a core feature with complex UI interactions. Implementing smooth animations, gesture recognition, and efficient data loading requires significant frontend expertise. The combination of UI complexity and data management makes this highly complex."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Implement Meme Upload Functionality",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down the meme upload system into subtasks covering form creation, client-side image compression, validation implementation, API endpoint development, storage integration, and upload limit enforcement.",
+      "reasoning": "This task involves both frontend and backend work with file handling, which is inherently complex. Client-side image processing, validation, storage integration, and implementing business rules for upload limits all contribute to its complexity."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Develop Like/Dislike Interaction System",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide the interaction system into subtasks covering API endpoint creation, database trigger implementation, UI component development, optimistic UI updates, and interaction validation logic.",
+      "reasoning": "This feature requires coordinating frontend and backend components with real-time feedback. The complexity comes from ensuring data consistency, implementing optimistic UI updates, and managing user interaction states."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Create User Profiles and Statistics",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the user profile development into subtasks covering profile page UI creation, upload history display, statistics calculation and display, API endpoint implementation, and profile editing functionality.",
+      "reasoning": "This task involves aggregating and displaying user data from multiple sources. The complexity lies in calculating statistics, creating an intuitive UI for different profile sections, and implementing editing capabilities."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Implement Basic Feed Algorithm",
+      "complexityScore": 8,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide the feed algorithm implementation into subtasks covering ranking logic development, API endpoint creation, pagination implementation, caching strategy, filtered view implementation, and performance optimization.",
+      "reasoning": "Algorithmic content ranking is inherently complex. This task requires balancing multiple factors (recency, popularity), implementing efficient database queries, managing pagination, and optimizing performance with caching strategies."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Develop Community Reporting System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the reporting system into subtasks covering reporting interface design, API endpoint creation, threshold system implementation, database trigger development, and user validation logic.",
+      "reasoning": "This task involves sensitive content moderation features with automated actions. The complexity comes from implementing threshold-based logic, ensuring users can only report once, and creating appropriate database triggers for content flagging."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Create Moderation Dashboard",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide the moderation dashboard development into subtasks covering admin interface creation, reported content display with filtering, moderation action implementation, report management functionality, analytics development, and access control.",
+      "reasoning": "This task requires creating a secure administrative interface with complex data management. The complexity comes from implementing various moderation workflows, ensuring proper access control, and providing analytical insights on moderation patterns."
+    }
+  ]
+}

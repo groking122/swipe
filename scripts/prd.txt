@@ -1,0 +1,337 @@
+# MemeSwipe - Product Requirements Document
+
+## Overview  
+MemeSwipe is a social platform that allows users to discover and share memes through an intuitive swipe interface. The platform addresses the problem of finding quality meme content by providing a curated, user-driven experience where users can quickly browse, like, dislike, and share memes. MemeSwipe is designed for meme enthusiasts who want a dedicated platform for meme content rather than finding memes scattered across various social media platforms.
+
+## Core Features  
+
+### Swipe Interface
+- **What it does**: Provides an intuitive, Tinder-like interface for browsing memes
+- **Why it's important**: Creates a frictionless, engaging experience that keeps users on the platform
+- **How it works**: Users swipe right to like, left to dislike memes; the interface automatically loads the next meme
+
+### Authentication System
+- **What it does**: Handles user registration, login, and profile management
+- **Why it's important**: Creates a personalized experience and enables features like uploading and tracking preferences
+- **How it works**: Integration with Clerk for Google and email authentication options
+
+### Meme Upload
+- **What it does**: Allows users to upload their own meme images with titles
+- **Why it's important**: Creates a community-driven content ecosystem
+- **How it works**: Simple form with image upload and basic metadata; includes client-side validation and server-side processing
+
+### Like/Dislike Functionality
+- **What it does**: Enables users to express preferences on memes
+- **Why it's important**: Creates engagement, feeds the recommendation system, and provides content creators with feedback
+- **How it works**: Simple binary choice via swipe or buttons; interactions are stored in the database
+
+### User Profiles
+- **What it does**: Provides users with personalized profiles showing their contributions and statistics
+- **Why it's important**: Creates a sense of identity and community
+- **How it works**: Displays user details, upload history, and interaction statistics
+
+### Basic Moderation System
+- **What it does**: Allows users to report inappropriate content and provides a moderation interface
+- **Why it's important**: Maintains community standards and ensures platform safety
+- **How it works**: Community reporting with threshold-based auto-removal and manual review dashboard
+
+### Feed Algorithm (Basic)
+- **What it does**: Determines which memes to show to which users
+- **Why it's important**: Ensures users see relevant, fresh content
+- **How it works**: Initially shows newest/trending memes, with simple ranking based on like/dislike ratio
+
+## User Experience  
+
+### User Personas
+1. **Content Consumer**: Primarily browses and interacts with memes
+2. **Content Creator**: Regularly uploads new memes
+3. **Community Moderator**: Reports inappropriate content and helps maintain standards
+
+### Key User Flows
+1. **New User Onboarding**:
+   - User registers via Google or email
+   - Completes basic profile setup
+   - Is introduced to the swipe interface
+   - Starts browsing memes immediately
+
+2. **Content Discovery**:
+   - User opens app to main feed
+   - Swipes through memes
+   - Interactions are logged for personalization
+
+3. **Content Creation**:
+   - User selects upload option
+   - Adds image and title
+   - Submits for community viewing
+   - Receives feedback via likes/dislikes
+
+4. **Content Moderation**:
+   - User sees inappropriate content
+   - Reports via simple reporting interface
+   - Content is flagged for review when threshold is reached
+   - Administrators review via moderation dashboard
+
+### UI/UX Considerations
+- Mobile-first design optimized for single-handed use
+- Minimalist interface with focus on the meme content
+- Seamless transitions between cards to encourage continued browsing
+- Clear visual feedback for interactions (likes, dislikes, uploads)
+- Responsive design that works across devices
+
+## Technical Architecture  
+
+### System Components
+1. **Next.js Frontend**
+   - React-based UI components
+   - Swipe interface using react-swipeable
+   - Server components for data fetching
+   - Client components for interactivity
+
+2. **Authentication Layer**
+   - Clerk integration for auth management
+   - JWT validation for API requests
+   - User profile synchronization with database
+
+3. **API Layer**
+   - Next.js API routes for core functionality
+   - RESTful endpoints for CRUD operations
+   - Rate limiting middleware
+
+4. **Database Layer**
+   - Supabase PostgreSQL for data storage
+   - Core tables: Users, Memes, Interactions, Reports
+   - Optimized queries and indexes
+
+5. **Storage Layer**
+   - Supabase Storage for meme images
+   - Client-side image compression
+   - Organized storage structure
+
+### Data Models
+
+#### Users
+- uuid id (PK)
+- string email
+- string username
+- string avatar_url
+- timestamp created_at
+- timestamp updated_at
+- boolean is_premium
+- int monthly_upload_count
+- int total_likes_received
+- int total_dislikes_received
+- int total_uploads
+
+#### Memes
+- uuid id (PK)
+- uuid user_id (FK)
+- string title
+- string image_url
+- string image_hash
+- timestamp created_at
+- timestamp updated_at
+- int like_count
+- int dislike_count
+- boolean is_featured
+- boolean is_moderated
+- boolean is_approved
+- int reports_count
+
+#### Interactions
+- uuid id (PK)
+- uuid user_id (FK)
+- uuid meme_id (FK)
+- boolean is_like
+- timestamp created_at
+
+#### Reports
+- uuid id (PK)
+- uuid user_id (FK)
+- uuid meme_id (FK)
+- string reason
+- timestamp created_at
+- boolean is_resolved
+- timestamp resolved_at
+
+### APIs and Integrations
+
+#### Authentication Endpoints
+- Handled by Clerk integration
+
+#### User Endpoints
+- GET /api/v1/users/me
+- PUT /api/v1/users/me
+- GET /api/v1/users/:id
+- GET /api/v1/users/me/stats
+- GET /api/v1/users/me/memes
+
+#### Meme Endpoints
+- GET /api/v1/memes
+- GET /api/v1/memes/:id
+- POST /api/v1/memes
+- DELETE /api/v1/memes/:id
+- GET /api/v1/memes/trending
+
+#### Interaction Endpoints
+- POST /api/v1/memes/:id/like
+- POST /api/v1/memes/:id/dislike
+- DELETE /api/v1/memes/:id/interaction
+
+#### Moderation Endpoints
+- POST /api/v1/memes/:id/report
+- GET /api/v1/reports/me
+
+### Infrastructure Requirements
+- Vercel for hosting (Hobby tier)
+- Supabase for database and storage (Free tier)
+- Clerk for authentication (Free tier)
+- Client-side and server-side caching strategies
+- Rate limiting for API endpoints
+
+## Development Roadmap  
+
+### Phase 1: MVP (4-6 Weeks)
+
+#### Foundation (Week 1-2)
+- Set up Next.js project with TypeScript and Tailwind CSS
+- Implement Clerk authentication
+- Create database schema in Supabase
+- Configure storage buckets
+- Implement base UI components and layouts
+
+#### Core Features (Week 3-4)
+- Implement swipe interface for browsing memes
+- Build meme upload functionality with validation
+- Create like/dislike interaction system
+- Develop user profile pages
+- Implement basic feed algorithm
+
+#### Refinement (Week 5-6)
+- Build community reporting system
+- Create moderation dashboard
+- Implement upload limits and enforcement
+- Optimize performance and responsiveness
+- Final testing and deployment
+
+### Phase 2: Enhanced Features (Post-MVP)
+
+#### Content Curation
+- AI-powered content moderation
+- Enhanced recommendation engine
+- Featured memes section
+
+#### Community Features
+- Weekly contests with prizes
+- User achievements and badges
+- Social sharing functionality
+
+#### Monetization
+- Premium subscription tiers
+- Ad-free experience for subscribers
+- Increased upload limits for premium users
+
+#### Platform Expansion
+- Follower system
+- Categories/tags for memes
+- Improved analytics
+
+## Logical Dependency Chain
+
+1. **Authentication + Database (Foundation)**
+   - Must be implemented first to enable user-specific features
+   - Enables storage of user data and preferences
+   - Required for all user-related functionality
+
+2. **Swipe Interface + Meme Viewing (Core Experience)**
+   - Creates the primary user experience
+   - Allows for immediate content consumption
+   - Provides a working front-end even before upload features
+
+3. **Meme Upload + Storage Integration**
+   - Enables user-generated content
+   - Builds upon the authentication system
+   - Creates a full content creation/consumption loop
+
+4. **Interaction System (Likes/Dislikes)**
+   - Builds on meme viewing capability
+   - Adds engagement metrics
+   - Enables future recommendation improvements
+
+5. **User Profiles + Stats**
+   - Utilizes existing user and interaction data
+   - Enhances community aspects
+   - Provides feedback to content creators
+
+6. **Moderation System**
+   - Depends on reporting functionality
+   - Utilizes existing user and meme data
+   - Ensures platform safety and compliance
+
+## Risks and Mitigations  
+
+### Technical Challenges
+
+#### Challenge: Image Processing at Scale
+- **Risk**: Poor performance with many image uploads and storage
+- **Mitigation**: Client-side image compression, efficient storage organization, CDN integration for Phase 2
+
+#### Challenge: Feed Performance
+- **Risk**: Slow feed loading as meme database grows
+- **Mitigation**: Implement pagination, caching strategies, and optimized queries
+
+#### Challenge: Auth Integration Complexity
+- **Risk**: Auth flow issues between Clerk and Supabase
+- **Mitigation**: Clear separation of concerns, comprehensive testing, fallback mechanisms
+
+### MVP Scope
+
+#### Challenge: Feature Creep
+- **Risk**: Adding too many features to MVP, delaying launch
+- **Mitigation**: Strict adherence to MVP definition, feature flagging for gradual rollout
+
+#### Challenge: Moderation without AI
+- **Risk**: Manual moderation becoming overwhelming
+- **Mitigation**: Community-driven reporting with thresholds, clear content guidelines
+
+### Resource Constraints
+
+#### Challenge: Zero-Budget Infrastructure
+- **Risk**: Free tier limitations affecting performance
+- **Mitigation**: Optimize resource usage, implement caching, plan for upgrade paths
+
+#### Challenge: Development Velocity
+- **Risk**: Underestimating implementation time
+- **Mitigation**: Focus on core features first, use existing libraries, implement feature flags
+
+## Appendix  
+
+### Free Tier Service Limitations
+
+#### Supabase Free Tier
+- 500MB database storage
+- 1GB file storage
+- Limited database connections
+- No database backups
+
+#### Clerk Free Tier
+- 5,000 MAU
+- Basic authentication options
+- Standard rate limits
+
+#### Vercel Hobby Tier
+- 100GB bandwidth per month
+- Limited serverless function execution
+- No team collaboration features
+
+### Phase 1 Tech Stack Details
+- Next.js 15.3.1
+- TypeScript
+- Tailwind CSS
+- React Swipeable
+- Clerk Auth
+- Supabase JS Client
+- Supabase Storage
+
+### Scaling Thresholds
+- First scaling tier at approximately 10,000 users or $150/month in infrastructure costs
+- Key metrics to monitor: storage usage, API rate limits, database performance 
