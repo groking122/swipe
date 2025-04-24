@@ -12,9 +12,22 @@ interface DbUser {
 
 /**
  * Process Clerk user ID to make it compatible with Supabase UUID format
+ * Handles both formats: with 'user_' prefix and without
  */
 function processUserId(userId: string): string {
-  return userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+  // Log the original user ID for debugging
+  console.debug('Processing Clerk user ID:', userId);
+  
+  // Handle IDs with 'user_' prefix
+  if (userId.startsWith('user_')) {
+    const processedId = userId.replace('user_', '');
+    console.debug('Processed ID (removed prefix):', processedId);
+    return processedId;
+  }
+  
+  // If no prefix, return as is
+  console.debug('ID has no prefix, using as is:', userId);
+  return userId;
 }
 
 /**
@@ -30,7 +43,7 @@ export async function getUserById(userId: string): Promise<User | null> {
     // Process the Clerk user ID to handle the 'user_' prefix
     const dbUserId = processUserId(userId);
     
-    console.debug('Fetching user from Supabase', { userId: dbUserId });
+    console.debug('Fetching user from Supabase', { originalId: userId, processedId: dbUserId });
 
     const { data, error } = await supabase
       .from('users')
@@ -40,6 +53,12 @@ export async function getUserById(userId: string): Promise<User | null> {
 
     if (error) {
       console.error('Error fetching user:', error);
+      
+      // If user not found, log a more specific message
+      if (error.message.includes('No rows found')) {
+        console.warn(`User ${dbUserId} not found in database. This may be a Clerk ID that hasn't been synced to Supabase yet.`);
+      }
+      
       return null;
     }
 
@@ -72,6 +91,12 @@ export async function checkUserExists(userId: string): Promise<boolean> {
       
     if (error) {
       console.error('Error checking user existence:', error);
+      
+      // Log more detailed information for debugging
+      if (error.message.includes('No rows found')) {
+        console.warn(`User ${dbUserId} not found in database. This may be a Clerk ID that hasn't been synced to Supabase yet.`);
+      }
+      
       return false;
     }
     

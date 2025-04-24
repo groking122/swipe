@@ -13,8 +13,24 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 /**
  * Process Clerk user ID to make it compatible with Supabase UUID format
  */
+/**
+ * Process Clerk user ID to make it compatible with Supabase UUID format
+ * Handles both formats: with 'user_' prefix and without
+ */
 function processUserId(userId: string): string {
-  return userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+  // Log the original user ID for debugging
+  console.log('Processing Clerk user ID:', userId);
+  
+  // Handle IDs with 'user_' prefix
+  if (userId.startsWith('user_')) {
+    const processedId = userId.replace('user_', '');
+    console.log('Processed ID (removed prefix):', processedId);
+    return processedId;
+  }
+  
+  // If no prefix, return as is
+  console.log('ID has no prefix, using as is:', userId);
+  return userId;
 }
 
 export async function POST(req: Request) {
@@ -84,7 +100,8 @@ export async function POST(req: Request) {
           primaryEmail.split('@')[0];
         
         console.log('Creating/updating user in Supabase:', {
-          id: dbUserId,
+          originalId: id,
+          processedId: dbUserId,
           email: primaryEmail,
           username: generatedUsername
         });
@@ -96,8 +113,12 @@ export async function POST(req: Request) {
           .eq('id', dbUserId)
           .single();
         
-        if (checkError && !checkError.message.includes('No rows found')) {
-          console.error('Error checking if user exists:', checkError);
+        if (checkError) {
+          if (checkError.message.includes('No rows found')) {
+            console.log(`User ${dbUserId} not found in database, will create new user`);
+          } else {
+            console.error('Error checking if user exists:', checkError);
+          }
         }
         
         if (existingUser) {
@@ -136,10 +157,36 @@ export async function POST(req: Request) {
           
           if (insertError) {
             console.error('Error creating user in Supabase:', insertError);
-            return NextResponse.json(
-              { error: `Error creating user: ${insertError.message}` },
-              { status: 500 }
-            );
+            
+            // If there's a unique constraint violation, try to update instead
+            if (insertError.message.includes('duplicate key') || insertError.message.includes('unique constraint')) {
+              console.log('Duplicate key error, trying to update instead');
+              
+              const { error: updateError } = await supabase
+                .from('users')
+                .update({
+                  email: primaryEmail,
+                  username: generatedUsername,
+                  avatar_url: image_url,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', dbUserId);
+              
+              if (updateError) {
+                console.error('Error updating user after insert failed:', updateError);
+                return NextResponse.json(
+                  { error: `Error creating/updating user: ${updateError.message}` },
+                  { status: 500 }
+                );
+              }
+              
+              console.log('User updated successfully after insert failed:', dbUserId);
+            } else {
+              return NextResponse.json(
+                { error: `Error creating user: ${insertError.message}` },
+                { status: 500 }
+              );
+            }
           }
           
           console.log('User created successfully in Supabase:', dbUserId);
