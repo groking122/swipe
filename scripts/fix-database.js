@@ -23,7 +23,7 @@ async function fixDatabase() {
   try {
     console.log(chalk.blue('Starting database schema fix...'));
 
-    // Read the SQL script
+    // Read the main SQL setup script
     const sqlScriptPath = path.join(process.cwd(), 'scripts', 'supabase-setup.sql');
     const sqlScript = fs.readFileSync(sqlScriptPath, 'utf8');
 
@@ -38,120 +38,163 @@ async function fixDatabase() {
       const directSuccess = await executeDirectSQL(sqlScript);
       if (directSuccess) {
         console.log(chalk.green('SQL executed successfully via direct method'));
-        return true;
-      }
-      
-      // Attempt alternative approach with RPC call
-      console.log(chalk.yellow('Trying alternative fix with direct column rename...'));
-      const { error: rpcError } = await supabase.rpc('fix_meme_image_columns');
-      
-      if (rpcError) {
-        console.error(chalk.red('Error with alternative fix:'), rpcError);
-        
-        // Create a simplified SQL script with just the essential column fix
-        const simplifiedSQL = `
-          DO $$
-          BEGIN
-            IF EXISTS (
-              SELECT 1 FROM information_schema.columns 
-              WHERE table_schema = 'public' 
-              AND table_name = 'memes' 
-              AND column_name = 'image_url'
-            ) AND NOT EXISTS (
-              SELECT 1 FROM information_schema.columns 
-              WHERE table_schema = 'public' 
-              AND table_name = 'memes' 
-              AND column_name = 'image_path'
-            ) THEN
-              ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;
-            ELSIF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns 
-              WHERE table_schema = 'public' 
-              AND table_name = 'memes' 
-              AND column_name = 'image_path'
-            ) THEN
-              ALTER TABLE public.memes ADD COLUMN image_path TEXT;
-            END IF;
-          END
-          $$;
-        `;
-        
-        // Try direct SQL with simplified script
-        const simplifiedSuccess = await executeDirectSQL(simplifiedSQL);
-        if (simplifiedSuccess) {
-          console.log(chalk.green('Simplified SQL fix executed successfully'));
-          return true;
-        }
-        
-        // Manual SQL approach
-        console.log(chalk.yellow('Attempting manual SQL fix...'));
-        
-        // Check if image_url column exists
-        const { data: columns, error: columnsError } = await supabase
-          .from('information_schema.columns')
-          .select('column_name')
-          .eq('table_schema', 'public')
-          .eq('table_name', 'memes');
-          
-        if (columnsError) {
-          console.error(chalk.red('Error checking columns:'), columnsError);
-          return false;
-        }
-        
-        const hasImageUrl = columns.some(col => col.column_name === 'image_url');
-        const hasImagePath = columns.some(col => col.column_name === 'image_path');
-        
-        if (hasImageUrl && !hasImagePath) {
-          // Rename the column
-          console.log(chalk.yellow('Renaming image_url to image_path...'));
-          const { error: renameError } = await supabase.rpc('exec_sql', { 
-            sql: 'ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;' 
-          });
-          
-          if (renameError) {
-            console.error(chalk.red('Error renaming column:'), renameError);
-            
-            // Try direct SQL for rename
-            const renameSuccess = await executeDirectSQL('ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;');
-            if (!renameSuccess) {
-              return false;
-            }
-          }
-          
-          console.log(chalk.green('Column renamed successfully!'));
-        } else if (!hasImagePath) {
-          // Add image_path column
-          console.log(chalk.yellow('Adding image_path column...'));
-          const { error: addColumnError } = await supabase.rpc('exec_sql', { 
-            sql: 'ALTER TABLE public.memes ADD COLUMN image_path TEXT;' 
-          });
-          
-          if (addColumnError) {
-            console.error(chalk.red('Error adding column:'), addColumnError);
-            
-            // Try direct SQL for adding column
-            const addSuccess = await executeDirectSQL('ALTER TABLE public.memes ADD COLUMN image_path TEXT;');
-            if (!addSuccess) {
-              return false;
-            }
-          }
-          
-          console.log(chalk.green('Column added successfully!'));
-        } else {
-          console.log(chalk.green('Column structure looks good - no changes needed'));
-        }
       } else {
-        console.log(chalk.green('Alternative fix applied successfully!'));
+        console.log(chalk.yellow('Trying alternative fixes...'));
+        await attemptAlternativeFixes();
       }
     } else {
       console.log(chalk.green('SQL script executed successfully!'));
     }
+    
+    // Always apply the meme schema fixes to ensure user_id and creator_id are correct
+    await fixMemeSchema();
     
     console.log(chalk.blue('Database fix complete'));
     return true;
   } catch (error) {
     console.error(chalk.red('Unexpected error:'), error);
     return false;
+  }
+}
+
+// Fix the meme schema specifically for user_id and creator_id issues
+async function fixMemeSchema() {
+  try {
+    console.log(chalk.blue('Starting meme schema fixes...'));
+    
+    // Read the meme schema fix SQL script
+    const fixMemeSchemaPath = path.join(process.cwd(), 'scripts', 'fix-meme-schema.sql');
+    const fixMemeSchemaSQL = fs.readFileSync(fixMemeSchemaPath, 'utf8');
+    
+    // Execute the SQL script
+    console.log(chalk.yellow('Executing meme schema fix script...'));
+    const { error } = await supabase.rpc('exec_sql', { sql: fixMemeSchemaSQL });
+    
+    if (error) {
+      console.error(chalk.red('Error executing meme schema fix:'), error);
+      
+      // Try direct SQL execution
+      const directSuccess = await executeDirectSQL(fixMemeSchemaSQL);
+      if (directSuccess) {
+        console.log(chalk.green('Meme schema fixed successfully via direct method'));
+        return true;
+      } else {
+        console.error(chalk.red('Failed to fix meme schema'));
+        return false;
+      }
+    } else {
+      console.log(chalk.green('Meme schema fixed successfully!'));
+      return true;
+    }
+  } catch (error) {
+    console.error(chalk.red('Error fixing meme schema:'), error);
+    return false;
+  }
+}
+
+// Attempt alternative fixes if the main script fails
+async function attemptAlternativeFixes() {
+  // Attempt alternative approach with RPC call
+  console.log(chalk.yellow('Trying alternative fix with direct column rename...'));
+  const { error: rpcError } = await supabase.rpc('fix_meme_image_columns');
+  
+  if (rpcError) {
+    console.error(chalk.red('Error with alternative fix:'), rpcError);
+    
+    // Create a simplified SQL script with just the essential column fix
+    const simplifiedSQL = `
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = 'memes' 
+          AND column_name = 'image_url'
+        ) AND NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = 'memes' 
+          AND column_name = 'image_path'
+        ) THEN
+          ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;
+        ELSIF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = 'memes' 
+          AND column_name = 'image_path'
+        ) THEN
+          ALTER TABLE public.memes ADD COLUMN image_path TEXT;
+        END IF;
+      END
+      $$;
+    `;
+    
+    // Try direct SQL with simplified script
+    const simplifiedSuccess = await executeDirectSQL(simplifiedSQL);
+    if (simplifiedSuccess) {
+      console.log(chalk.green('Simplified SQL fix executed successfully'));
+      return true;
+    }
+    
+    // Manual SQL approach
+    console.log(chalk.yellow('Attempting manual SQL fix...'));
+    
+    // Check if image_url column exists
+    const { data: columns, error: columnsError } = await supabase
+      .from('information_schema.columns')
+      .select('column_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'memes');
+      
+    if (columnsError) {
+      console.error(chalk.red('Error checking columns:'), columnsError);
+      return false;
+    }
+    
+    const hasImageUrl = columns.some(col => col.column_name === 'image_url');
+    const hasImagePath = columns.some(col => col.column_name === 'image_path');
+    
+    if (hasImageUrl && !hasImagePath) {
+      // Rename the column
+      console.log(chalk.yellow('Renaming image_url to image_path...'));
+      const { error: renameError } = await supabase.rpc('exec_sql', { 
+        sql: 'ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;' 
+      });
+      
+      if (renameError) {
+        console.error(chalk.red('Error renaming column:'), renameError);
+        
+        // Try direct SQL for rename
+        const renameSuccess = await executeDirectSQL('ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;');
+        if (!renameSuccess) {
+          return false;
+        }
+      }
+      
+      console.log(chalk.green('Column renamed successfully!'));
+    } else if (!hasImagePath) {
+      // Add image_path column
+      console.log(chalk.yellow('Adding image_path column...'));
+      const { error: addColumnError } = await supabase.rpc('exec_sql', { 
+        sql: 'ALTER TABLE public.memes ADD COLUMN image_path TEXT;' 
+      });
+      
+      if (addColumnError) {
+        console.error(chalk.red('Error adding column:'), addColumnError);
+        
+        // Try direct SQL for adding column
+        const addSuccess = await executeDirectSQL('ALTER TABLE public.memes ADD COLUMN image_path TEXT;');
+        if (!addSuccess) {
+          return false;
+        }
+      }
+      
+      console.log(chalk.green('Column added successfully!'));
+    } else {
+      console.log(chalk.green('Column structure looks good - no changes needed'));
+    }
+  } else {
+    console.log(chalk.green('Alternative fix applied successfully!'));
   }
 }
 

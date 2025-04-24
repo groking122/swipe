@@ -66,3 +66,99 @@ BEGIN
   END IF;
 END
 $$; 
+
+-- SQL script to fix meme schema issues, particularly the user_id and creator_id columns
+
+-- Function to fix the meme table columns
+CREATE OR REPLACE FUNCTION fix_meme_columns()
+RETURNS VOID 
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Check if user_id column exists and add it if not
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'memes' 
+    AND column_name = 'user_id'
+  ) THEN
+    -- Add user_id column
+    ALTER TABLE public.memes ADD COLUMN user_id UUID;
+    
+    -- If creator_id exists, copy values from creator_id to user_id
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'memes' 
+      AND column_name = 'creator_id'
+    ) THEN
+      UPDATE public.memes SET user_id = creator_id;
+    END IF;
+  END IF;
+
+  -- Check if creator_id column exists and add it if not
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'memes' 
+    AND column_name = 'creator_id'
+  ) THEN
+    -- Add creator_id column
+    ALTER TABLE public.memes ADD COLUMN creator_id UUID;
+    
+    -- If user_id exists, copy values from user_id to creator_id
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'memes' 
+      AND column_name = 'user_id'
+    ) THEN
+      UPDATE public.memes SET creator_id = user_id;
+    END IF;
+  END IF;
+
+  -- Make sure there's a foreign key relationship for creator_id if it doesn't already exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints tc 
+    JOIN information_schema.constraint_column_usage ccu 
+    ON tc.constraint_name = ccu.constraint_name
+    WHERE tc.constraint_type = 'FOREIGN KEY' 
+    AND tc.table_schema = 'public' 
+    AND tc.table_name = 'memes' 
+    AND ccu.column_name = 'creator_id'
+  ) THEN
+    -- Drop existing FK if it exists but is incorrectly defined
+    BEGIN
+      ALTER TABLE public.memes DROP CONSTRAINT IF EXISTS memes_creator_id_fkey;
+    EXCEPTION WHEN OTHERS THEN
+      -- Constraint doesn't exist or can't be dropped, continue
+    END;
+    
+    -- Add foreign key constraint
+    BEGIN
+      ALTER TABLE public.memes 
+        ADD CONSTRAINT memes_creator_id_fkey 
+        FOREIGN KEY (creator_id) 
+        REFERENCES public.users(id) ON DELETE CASCADE;
+    EXCEPTION WHEN OTHERS THEN
+      -- Can't add constraint, might be due to invalid data or users table issue
+    END;
+  END IF;
+
+  -- Create an index on user_id if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes 
+    WHERE schemaname = 'public' 
+    AND tablename = 'memes' 
+    AND indexname = 'memes_user_id_idx'
+  ) THEN
+    CREATE INDEX memes_user_id_idx ON public.memes(user_id);
+  END IF;
+END;
+$$;
+
+-- Execute the function
+SELECT fix_meme_columns();
+
+-- Clean up by dropping the function
+DROP FUNCTION IF EXISTS fix_meme_columns(); 
