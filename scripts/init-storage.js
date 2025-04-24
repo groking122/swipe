@@ -34,10 +34,11 @@ async function initBuckets() {
       if (error && error.message.includes('not found')) {
         console.log(chalk.yellow(`Creating bucket: ${bucketName}`));
         
-        // Create the bucket
+        // Create the bucket with proper RLS policies
         const { error: createError } = await supabase.storage.createBucket(bucketName, {
           public: true,
-          fileSizeLimit: 5 * 1024 * 1024 // 5MB
+          fileSizeLimit: 5 * 1024 * 1024, // 5MB
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
         });
         
         if (createError) {
@@ -45,11 +46,31 @@ async function initBuckets() {
         } else {
           console.log(chalk.green(`Successfully created bucket: ${bucketName}`));
           
-          // Create a public URL policy (this is just a trick to make sure policies are created)
-          const { error: policyError } = await supabase.storage.from(bucketName)
-            .createSignedUrl('dummy.txt', 1);
+          // Create explicit RLS policies for the bucket
+          try {
+            // First try to create a signed URL to trigger policy creation
+            const { error: policyError } = await supabase.storage.from(bucketName)
+              .createSignedUrl('dummy.txt', 60);
             
-          console.log(chalk.green(`Public access set for bucket: ${bucketName}`));
+            if (policyError && !policyError.message.includes('not found')) {
+              console.warn(chalk.yellow(`Warning: Could not create signed URL for bucket ${bucketName}:`), policyError);
+            }
+            
+            // Explicitly create RLS policies using SQL
+            const { error: sqlError } = await supabase.rpc('create_storage_policies', {
+              bucket_name: bucketName
+            });
+            
+            if (sqlError) {
+              console.warn(chalk.yellow(`Warning: Could not create explicit policies for bucket ${bucketName}:`), sqlError);
+            } else {
+              console.log(chalk.green(`Storage policies created for bucket: ${bucketName}`));
+            }
+            
+            console.log(chalk.green(`Public access set for bucket: ${bucketName}`));
+          } catch (policyError) {
+            console.warn(chalk.yellow(`Warning: Error setting up policies for bucket ${bucketName}:`), policyError);
+          }
         }
       } else if (error) {
         console.error(chalk.red(`Error checking bucket ${bucketName}:`), error);

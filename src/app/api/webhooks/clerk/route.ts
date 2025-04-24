@@ -78,18 +78,85 @@ export async function POST(req: Request) {
         // Process the Clerk user ID to remove 'user_' prefix for compatibility with Supabase
         const dbUserId = processUserId(id);
         
-        await upsertUser({
-          id: dbUserId, // Use the processed ID
+        // Generate a username if not provided
+        const generatedUsername = username ||
+          `${first_name || ''}${last_name || ''}`.toLowerCase() ||
+          primaryEmail.split('@')[0];
+        
+        console.log('Creating/updating user in Supabase:', {
+          id: dbUserId,
           email: primaryEmail,
-          username: username || `${first_name || ''}${last_name || ''}`.toLowerCase() || primaryEmail.split('@')[0],
-          avatar_url: image_url,
+          username: generatedUsername
         });
         
-        return NextResponse.json({ success: true });
+        // First check if user exists
+        const { data: existingUser, error: checkError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', dbUserId)
+          .single();
+        
+        if (checkError && !checkError.message.includes('No rows found')) {
+          console.error('Error checking if user exists:', checkError);
+        }
+        
+        if (existingUser) {
+          // Update existing user
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              email: primaryEmail,
+              username: generatedUsername,
+              avatar_url: image_url,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', dbUserId);
+          
+          if (updateError) {
+            console.error('Error updating user in Supabase:', updateError);
+            return NextResponse.json(
+              { error: `Error updating user: ${updateError.message}` },
+              { status: 500 }
+            );
+          }
+          
+          console.log('User updated successfully in Supabase:', dbUserId);
+        } else {
+          // Create new user
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: dbUserId,
+              email: primaryEmail,
+              username: generatedUsername,
+              avatar_url: image_url,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          
+          if (insertError) {
+            console.error('Error creating user in Supabase:', insertError);
+            return NextResponse.json(
+              { error: `Error creating user: ${insertError.message}` },
+              { status: 500 }
+            );
+          }
+          
+          console.log('User created successfully in Supabase:', dbUserId);
+        }
+        
+        return NextResponse.json({
+          success: true,
+          user: {
+            id: dbUserId,
+            email: primaryEmail,
+            username: generatedUsername
+          }
+        });
       } catch (error) {
         console.error('Error syncing user with Supabase:', error);
         return NextResponse.json(
-          { error: 'Error syncing user' },
+          { error: `Error syncing user: ${error instanceof Error ? error.message : 'Unknown error'}` },
           { status: 500 }
         );
       }
