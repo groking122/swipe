@@ -12,6 +12,9 @@
     "parse-prd": "node scripts/dev.js parse-prd",
     "init-storage": "node scripts/init-storage.js",
     "fix-db": "node scripts/fix-database.js",
+    "fix-all": "node scripts/fix-all-issues.js",
+    "fix-button": "node scripts/fix-button-issue.js",
+    "fix-env": "node scripts/fix-env-issues.js",
     "prepare-deploy": "npm run init-storage && npm run fix-db",
     "vercel-build": "npm run prepare-deploy || true && next build"
   },

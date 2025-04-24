@@ -1,21 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 
 /**
  * Component that initializes application resources when the app starts
  * This is a client component that calls the init API endpoint
  */
 export default function InitializeApp() {
+  const { isLoaded } = useAuth();
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only run once when the component mounts
-    if (!initialized) {
+    // Only run once when the component mounts and Clerk is loaded
+    if (!initialized && isLoaded) {
       initializeApp();
     }
-  }, [initialized]);
+  }, [initialized, isLoaded]);
 
   const initializeApp = async () => {
     try {
@@ -23,12 +25,13 @@ export default function InitializeApp() {
       
       // Call the init API endpoint
       const response = await fetch('/api/init');
-      const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to initialize application');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to initialize application: ${response.status}`);
       }
       
+      const data = await response.json().catch(() => ({}));
       console.log('Application initialized successfully:', data);
       setInitialized(true);
     } catch (err) {

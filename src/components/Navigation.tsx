@@ -23,7 +23,7 @@ export default function Navigation() {
             Feed
           </Link>
           
-          {isLoaded && (
+          {isLoaded ? (
             isSignedIn ? (
               <>
                 <Link href="/memes" className="text-gray-600 hover:text-gray-900">
@@ -44,6 +44,12 @@ export default function Navigation() {
                 </SignUpButton>
               </>
             )
+          ) : (
+            // Show loading state while Clerk is initializing
+            <div className="flex items-center space-x-4">
+              <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+            </div>
           )}
         </nav>
       </div>

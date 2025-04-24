@@ -1,11 +1,19 @@
-import Image from 'next/image';
-import Button from '../components/ui/Button';
-import { Card, CardHeader, CardContent, CardFooter } from '../components/ui/Card';
-import { SignInButton, SignUpButton } from '@clerk/nextjs';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import Button from '@/components/ui/Button';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
+import { SignInButton, SignUpButton, useAuth } from '@clerk/nextjs';
 
 export default function Home() {
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
   // Use a fixed year value instead of dynamic Date call
   const currentYear = 2025;
+  
+  const handleFeedClick = () => {
+    router.push('/feed');
+  };
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -25,12 +33,18 @@ export default function Home() {
           </CardContent>
           <CardFooter>
             <div className="flex flex-col space-y-2">
-              <SignUpButton mode="modal">
-                <Button>Sign Up</Button>
-              </SignUpButton>
-              <SignInButton mode="modal">
-                <Button variant="outline">Already have an account? Log in</Button>
-              </SignInButton>
+              {isLoaded && !isSignedIn ? (
+                <>
+                  <SignUpButton mode="modal">
+                    <Button>Sign Up</Button>
+                  </SignUpButton>
+                  <SignInButton mode="modal">
+                    <Button variant="outline">Already have an account? Log in</Button>
+                  </SignInButton>
+                </>
+              ) : (
+                <Button onClick={handleFeedClick}>Go to Feed</Button>
+              )}
             </div>
           </CardFooter>
         </Card>
@@ -49,7 +63,7 @@ export default function Home() {
             </ul>
           </CardContent>
           <CardFooter>
-            <Button variant="secondary">Learn More</Button>
+            <Button variant="secondary" onClick={handleFeedClick}>Browse Memes</Button>
           </CardFooter>
         </Card>
       </div>
