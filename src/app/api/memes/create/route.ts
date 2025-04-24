@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { createMeme, checkMonthlyUploadLimit } from '@/services/memeService';
 import { uploadFile } from '@/utils/supabase';
 import { generateImageHash } from '@/utils/imageHash';
-import { checkUserExists } from '@/services/serverUserService';
+import { ensureUserExists } from '@/utils/ensureUserExists';
 
 // This config is needed for file uploads
 export const config = {
@@ -30,14 +30,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process the Clerk user ID - remove 'user_' prefix if it exists
-    // This ensures compatibility between Clerk IDs and your database UUID format
-    const dbUserId = userId.startsWith('user_') ? userId.replace('user_', '') : userId;
-
-    // Verify user exists in our database
-    const userExists = await checkUserExists(dbUserId);
-    if (!userExists) {
-      console.error(`User ${dbUserId} not found in database. This may be a Clerk ID that hasn't been synced to Supabase yet.`);
+    // Ensure the user exists in Supabase
+    const { success, error, userId: dbUserId } = await ensureUserExists();
+    
+    if (!success || !dbUserId) {
+      console.error(`Failed to ensure user exists in Supabase: ${error}`);
       return NextResponse.json(
         { error: 'User account not fully set up in our system. Please try again in a moment.' },
         { status: 400 }
@@ -184,4 +181,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
