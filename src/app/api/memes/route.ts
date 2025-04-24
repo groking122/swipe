@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { supabaseAdmin } from '@/utils/supabaseAdmin';
 
 // Initialize Supabase client with environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -11,77 +12,78 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Bucket name for storing meme images - ensure this is consistent across the application
 const MEME_BUCKET = 'meme-images';
 
-// Ensure the bucket exists before trying to upload
+// Ensure the bucket exists before trying to upload - using admin client to bypass RLS
 async function ensureBucketExists(bucketName: string): Promise<boolean> {
   try {
-    console.log(`Checking if bucket ${bucketName} exists...`);
+    console.log(`[ADMIN] Checking if bucket ${bucketName} exists...`);
     
-    // Check if the bucket exists
-    const { data: bucket, error: getBucketError } = await supabase.storage
+    // Check if the bucket exists using admin client
+    const { data: bucket, error: getBucketError } = await supabaseAdmin.storage
       .getBucket(bucketName);
     
     // If bucket exists, return true
     if (!getBucketError) {
-      console.log(`Bucket ${bucketName} already exists`);
+      console.log(`[ADMIN] Bucket ${bucketName} already exists`);
       return true;
     }
     
     // If error is not "Bucket not found", log and return false
     if (getBucketError && !getBucketError.message.includes('not found')) {
-      console.error(`Error checking bucket ${bucketName}:`, getBucketError);
+      console.error(`[ADMIN] Error checking bucket ${bucketName}:`, getBucketError);
       return false;
     }
     
     // Bucket not found, try to create it
-    console.log(`Creating bucket: ${bucketName}`);
+    console.log(`[ADMIN] Creating bucket: ${bucketName}`);
     
-    // Create the bucket
-    const { error: createError } = await supabase.storage
+    // Create the bucket using admin client
+    const { error: createError } = await supabaseAdmin.storage
       .createBucket(bucketName, {
         public: true,
-        fileSizeLimit: 5 * 1024 * 1024 // 5MB limit
+        fileSizeLimit: 5 * 1024 * 1024, // 5MB limit
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       });
     
     if (createError) {
-      console.error(`Failed to create bucket ${bucketName}:`, createError);
+      console.error(`[ADMIN] Failed to create bucket ${bucketName}:`, createError);
       return false;
     }
     
     // Set up public access policy for the bucket
     try {
       // Create a dummy signed URL to trigger policy creation
-      const { error: signedUrlError } = await supabase.storage
+      const { error: signedUrlError } = await supabaseAdmin.storage
         .from(bucketName)
         .createSignedUrl('dummy.txt', 60);
       
-      if (signedUrlError) {
-        console.warn(`Warning: Could not create signed URL for bucket ${bucketName}:`, signedUrlError);
+      if (signedUrlError && !signedUrlError.message.includes('not found')) {
+        console.warn(`[ADMIN] Warning: Could not create signed URL for bucket ${bucketName}:`, signedUrlError);
       }
       
       // Get public URL to verify public access
-      const { data: publicUrlData } = supabase.storage
+      const { data: publicUrlData } = supabaseAdmin.storage
         .from(bucketName)
         .getPublicUrl('dummy.txt');
       
       if (!publicUrlData || !publicUrlData.publicUrl) {
-        console.warn(`Warning: Could not get public URL for bucket ${bucketName}`);
+        console.warn(`[ADMIN] Warning: Could not get public URL for bucket ${bucketName}`);
       }
     } catch (policyError) {
       // Policy creation might fail but bucket could still be usable
-      console.warn(`Warning: Could not set public access policy for bucket ${bucketName}:`, policyError);
+      console.warn(`[ADMIN] Warning: Could not set public access policy for bucket ${bucketName}:`, policyError);
     }
     
     // Verify bucket was created successfully
-    const { error: verifyError } = await supabase.storage.getBucket(bucketName);
+    const { error: verifyError } = await supabaseAdmin.storage.getBucket(bucketName);
     if (verifyError) {
-      console.error(`Bucket ${bucketName} creation verification failed:`, verifyError);
+      console.error(`[ADMIN] Bucket ${bucketName} creation verification failed:`, verifyError);
       return false;
     }
     
-    console.log(`Bucket ${bucketName} created successfully`);
+    console.log(`[ADMIN] Bucket ${bucketName} created successfully`);
     return true;
   } catch (error) {
-    console.error(`Error in ensureBucketExists for ${bucketName}:`, error);
+    console.error(`[ADMIN] Error in ensureBucketExists for ${bucketName}:`, error);
     return false;
   }
 }
@@ -136,7 +138,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure the bucket exists before uploading
+    // Ensure the bucket exists before uploading - using admin client
     const bucketExists = await ensureBucketExists(MEME_BUCKET);
     if (!bucketExists) {
       return NextResponse.json(
@@ -154,12 +156,12 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
 
-    // Upload file to Supabase Storage with retry logic
+    // Upload file to Supabase Storage with retry logic - using admin client
     let uploadError;
     let uploadSuccess = false;
     
-    // First attempt
-    const uploadResult = await supabase.storage
+    // First attempt with admin client
+    const uploadResult = await supabaseAdmin.storage
       .from(MEME_BUCKET)
       .upload(filePath, buffer, {
         contentType: file.type,
@@ -171,16 +173,16 @@ export async function POST(request: NextRequest) {
     
     // If first attempt failed, try to initialize the bucket and retry
     if (uploadError) {
-      console.error('Initial upload attempt failed:', uploadError);
+      console.error('[ADMIN] Initial upload attempt failed:', uploadError);
       
       // Try to ensure the bucket exists again
       const bucketReinitialized = await ensureBucketExists(MEME_BUCKET);
       
       if (bucketReinitialized) {
-        console.log('Bucket reinitialized, retrying upload...');
+        console.log('[ADMIN] Bucket reinitialized, retrying upload...');
         
-        // Retry the upload
-        const retryResult = await supabase.storage
+        // Retry the upload with admin client
+        const retryResult = await supabaseAdmin.storage
           .from(MEME_BUCKET)
           .upload(filePath, buffer, {
             contentType: file.type,
@@ -189,10 +191,10 @@ export async function POST(request: NextRequest) {
           });
         
         if (!retryResult.error) {
-          console.log('Retry upload successful');
+          console.log('[ADMIN] Retry upload successful');
           uploadSuccess = true;
         } else {
-          console.error('Retry upload failed:', retryResult.error);
+          console.error('[ADMIN] Retry upload failed:', retryResult.error);
           uploadError = retryResult.error;
         }
       }
@@ -201,15 +203,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!uploadSuccess) {
-      console.error('Error uploading file after retries:', uploadError);
+      console.error('[ADMIN] Error uploading file after retries:', uploadError);
       return NextResponse.json(
         { error: 'Failed to upload image', details: uploadError?.message },
         { status: 500 }
       );
     }
 
-    // Get the public URL for the uploaded file
-    const { data: { publicUrl } } = supabase.storage
+    // Get the public URL for the uploaded file - using admin client
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from(MEME_BUCKET)
       .getPublicUrl(filePath);
 
@@ -246,4 +248,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

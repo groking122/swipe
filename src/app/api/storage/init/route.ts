@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client with environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { supabaseAdmin } from '@/utils/supabaseAdmin';
 
 // List of required buckets for the application
 const REQUIRED_BUCKETS = ['meme-images', 'user-avatars'];
@@ -20,26 +15,26 @@ async function initializeBuckets(): Promise<{
 
   for (const bucketName of REQUIRED_BUCKETS) {
     try {
-      console.log(`Initializing bucket: ${bucketName}`);
+      console.log(`[ADMIN] Initializing bucket: ${bucketName}`);
       
       // Check if bucket exists
-      const { data, error: getBucketError } = await supabase.storage.getBucket(bucketName);
+      const { data, error: getBucketError } = await supabaseAdmin.storage.getBucket(bucketName);
       
       // If bucket exists, mark it as already existing
       if (!getBucketError) {
-        console.log(`Bucket ${bucketName} already exists`);
+        console.log(`[ADMIN] Bucket ${bucketName} already exists`);
         
         // Ensure public access is set up
         try {
           // Create a dummy signed URL to trigger policy creation
-          await supabase.storage.from(bucketName).createSignedUrl('dummy.txt', 60);
+          await supabaseAdmin.storage.from(bucketName).createSignedUrl('dummy.txt', 60);
           
           // Get public URL to verify public access
-          const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl('dummy.txt');
+          const { data: publicUrlData } = supabaseAdmin.storage.from(bucketName).getPublicUrl('dummy.txt');
           
-          console.log(`Verified public access for bucket ${bucketName}`);
+          console.log(`[ADMIN] Verified public access for bucket ${bucketName}`);
         } catch (policyError) {
-          console.warn(`Warning: Could not verify public access for bucket ${bucketName}:`, policyError);
+          console.warn(`[ADMIN] Warning: Could not verify public access for bucket ${bucketName}:`, policyError);
         }
         
         results.push({
@@ -52,16 +47,17 @@ async function initializeBuckets(): Promise<{
       
       // If bucket doesn't exist or there was an error, try to create it
       if (getBucketError && getBucketError.message.includes('not found')) {
-        console.log(`Creating bucket ${bucketName}...`);
+        console.log(`[ADMIN] Creating bucket ${bucketName}...`);
         
-        // Create the bucket
-        const { error: createError } = await supabase.storage.createBucket(bucketName, {
+        // Create the bucket with admin privileges
+        const { error: createError } = await supabaseAdmin.storage.createBucket(bucketName, {
           public: true,
-          fileSizeLimit: 5 * 1024 * 1024 // 5MB limit
+          fileSizeLimit: 5 * 1024 * 1024, // 5MB limit
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
         });
         
         if (createError) {
-          console.error(`Failed to create bucket ${bucketName}:`, createError);
+          console.error(`[ADMIN] Failed to create bucket ${bucketName}:`, createError);
           results.push({
             bucket: bucketName,
             created: false,
@@ -71,18 +67,18 @@ async function initializeBuckets(): Promise<{
           // Create a public policy for the bucket
           try {
             // Create a dummy signed URL to trigger policy creation
-            await supabase.storage.from(bucketName).createSignedUrl('dummy.txt', 60);
+            await supabaseAdmin.storage.from(bucketName).createSignedUrl('dummy.txt', 60);
             
             // Get public URL to verify public access
-            const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl('dummy.txt');
+            const { data: publicUrlData } = supabaseAdmin.storage.from(bucketName).getPublicUrl('dummy.txt');
             
-            console.log(`Successfully created bucket ${bucketName} with public access`);
+            console.log(`[ADMIN] Successfully created bucket ${bucketName} with public access`);
             results.push({
               bucket: bucketName,
               created: true
             });
           } catch (policyError) {
-            console.warn(`Warning: Bucket ${bucketName} created but could not set public access:`, policyError);
+            console.warn(`[ADMIN] Warning: Bucket ${bucketName} created but could not set public access:`, policyError);
             results.push({
               bucket: bucketName,
               created: true,
@@ -92,7 +88,7 @@ async function initializeBuckets(): Promise<{
         }
       } else {
         // Some other error occurred when checking the bucket
-        console.error(`Error checking bucket ${bucketName}:`, getBucketError);
+        console.error(`[ADMIN] Error checking bucket ${bucketName}:`, getBucketError);
         results.push({
           bucket: bucketName,
           created: false,
@@ -100,7 +96,7 @@ async function initializeBuckets(): Promise<{
         });
       }
     } catch (error: any) {
-      console.error(`Error processing bucket ${bucketName}:`, error);
+      console.error(`[ADMIN] Error processing bucket ${bucketName}:`, error);
       results.push({
         bucket: bucketName,
         created: false,
@@ -120,10 +116,10 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('Error initializing storage buckets:', error);
+    console.error('[ADMIN] Error initializing storage buckets:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Unknown error',
     }, { status: 500 });
   }
-} 
+}
