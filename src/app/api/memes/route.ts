@@ -8,6 +8,50 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Bucket name for storing meme images
+const MEME_BUCKET = 'meme-images';
+
+// Ensure the bucket exists before trying to upload
+async function ensureBucketExists(bucketName: string): Promise<boolean> {
+  try {
+    // Check if the bucket exists
+    const { data: bucket, error: getBucketError } = await supabase.storage
+      .getBucket(bucketName);
+    
+    // If bucket doesn't exist, create it
+    if (getBucketError && getBucketError.message.includes('not found')) {
+      console.log(`Creating bucket: ${bucketName}`);
+      const { error: createError } = await supabase.storage
+        .createBucket(bucketName, {
+          public: true,
+          fileSizeLimit: 5 * 1024 * 1024 // 5MB limit
+        });
+      
+      if (createError) {
+        console.error(`Failed to create bucket ${bucketName}:`, createError);
+        return false;
+      }
+      
+      // Set public access to the bucket
+      const { error: policyError } = await supabase.storage
+        .from(bucketName)
+        .createSignedUrl('dummy.txt', 1); // This is just to trigger policy creation
+      
+      console.log(`Bucket ${bucketName} created successfully`);
+      return true;
+    } else if (getBucketError) {
+      console.error(`Error checking bucket ${bucketName}:`, getBucketError);
+      return false;
+    }
+    
+    console.log(`Bucket ${bucketName} already exists`);
+    return true;
+  } catch (error) {
+    console.error(`Error in ensureBucketExists for ${bucketName}:`, error);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Check if user is authenticated using Clerk
@@ -58,10 +102,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure the bucket exists before uploading
+    const bucketExists = await ensureBucketExists(MEME_BUCKET);
+    if (!bucketExists) {
+      return NextResponse.json(
+        { error: 'Failed to create storage bucket' },
+        { status: 500 }
+      );
+    }
+
     // Generate unique filename
     const fileExt = file.name.split('.').pop();
     const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `memes/${fileName}`;
+    const filePath = `${userId}/${fileName}`;
 
     // Convert file to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
@@ -69,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     // Upload file to Supabase Storage
     const { error: uploadError } = await supabase.storage
-      .from('meme-images')
+      .from(MEME_BUCKET)
       .upload(filePath, buffer, {
         contentType: file.type,
         cacheControl: '3600',
@@ -85,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     // Get the public URL for the uploaded file
     const { data: { publicUrl } } = supabase.storage
-      .from('meme-images')
+      .from(MEME_BUCKET)
       .getPublicUrl(filePath);
 
     // Create meme record in database
@@ -95,6 +148,7 @@ export async function POST(request: NextRequest) {
         {
           title,
           image_url: publicUrl,
+          image_path: filePath,
           user_id: userId,
           status: 'active',
         },

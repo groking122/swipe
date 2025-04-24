@@ -13,6 +13,41 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 /**
+ * Ensure that a bucket exists, creating it if it doesn't
+ */
+export async function ensureBucketExists(bucket: string): Promise<boolean> {
+  try {
+    // Check if bucket exists
+    const { data, error } = await supabase.storage.getBucket(bucket);
+    
+    if (error && error.message === 'Bucket not found') {
+      console.log(`Creating bucket: ${bucket}`);
+      
+      // Create the bucket
+      const { error: createError } = await supabase.storage.createBucket(bucket, {
+        public: true,
+        fileSizeLimit: 5242880, // 5MB
+      });
+      
+      if (createError) {
+        console.error(`Error creating bucket ${bucket}:`, createError);
+        return false;
+      }
+      
+      return true;
+    } else if (error) {
+      console.error(`Error checking bucket ${bucket}:`, error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error ensuring bucket ${bucket} exists:`, error);
+    return false;
+  }
+}
+
+/**
  * Get a URL for a file in Supabase Storage
  */
 export function getFileUrl(bucket: string, path: string): string {
@@ -29,6 +64,14 @@ export async function uploadFile(
   path: string,
   file: File
 ): Promise<string | null> {
+  // Ensure the bucket exists before uploading
+  const bucketExists = await ensureBucketExists(bucket);
+  
+  if (!bucketExists) {
+    console.error(`Cannot upload to non-existent bucket: ${bucket}`);
+    return null;
+  }
+
   const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
     cacheControl: '3600',
     upsert: false,

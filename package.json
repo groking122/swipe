@@ -9,7 +9,8 @@
     "lint": "next lint",
     "list": "node scripts/dev.js list",
     "generate": "node scripts/dev.js generate",
-    "parse-prd": "node scripts/dev.js parse-prd"
+    "parse-prd": "node scripts/dev.js parse-prd",
+    "init-storage": "node scripts/init-storage.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
