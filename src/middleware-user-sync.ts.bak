@@ -1,62 +1,21 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from './utils/supabaseAdmin';
 
-// Define public routes that don't require authentication
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/api/webhooks(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/forgot-password(.*)",
-  "/api/clerk-webhook",
-  "/api/init",
-]);
-
-// Define routes that can be accessed before the Clerk
-// authentication flow is completed
-const isIgnoredRoute = createRouteMatcher([
-  "/api/webhooks(.*)",
-  "/api/clerk-webhook",
-  "/api/init",
-]);
-
-// Define routes that require user sync
-const needsUserSync = createRouteMatcher([
-  '/feed',
-  '/profile',
-  '/upload',
-  '/memes/:path*',
-  '/api/memes/:path*',
-  '/api/interactions/:path*',
-]);
-
 /**
- * Combined middleware that handles both authentication and user sync
+ * Middleware to ensure users are synced to Supabase
+ * This runs on protected routes to make sure the user exists in Supabase
  */
 export async function middleware(request: NextRequest) {
   try {
-    // Don't protect public or ignored routes
-    if (isPublicRoute(request) || isIgnoredRoute(request)) {
-      return NextResponse.next();
-    }
-    
     // Get the authenticated user from Clerk
     const { userId } = await auth();
     
-    // If no user is authenticated and this is a protected route, redirect to sign in
-    if (!userId && !isPublicRoute(request)) {
-      // This route requires authentication
-      return NextResponse.redirect(new URL('/sign-in', request.url));
-    }
-    
-    // If this route doesn't need user sync, just continue
-    if (!needsUserSync(request) || !userId) {
+    // If no user is authenticated, continue without syncing
+    if (!userId) {
       return NextResponse.next();
     }
-    
-    // From here on, we're handling user sync for authenticated users on routes that need it
     
     // Process the Clerk user ID to remove 'user_' prefix if it exists
     const dbUserId = userId.startsWith('user_') ? userId.replace('user_', '') : userId;
@@ -128,17 +87,19 @@ export async function middleware(request: NextRequest) {
     
     return NextResponse.next();
   } catch (error) {
-    console.error('Error in middleware:', error);
+    console.error('Error in user sync middleware:', error);
     return NextResponse.next();
   }
 }
 
-// Configure which routes this middleware will run on
+// Only run this middleware on routes that require authentication
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    '/feed',
+    '/profile',
+    '/upload',
+    '/memes/:path*',
+    '/api/memes/:path*',
+    '/api/interactions/:path*',
   ],
 };

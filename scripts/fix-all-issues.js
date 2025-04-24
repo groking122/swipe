@@ -3,6 +3,8 @@
 
 import { execSync } from 'child_process';
 import chalk from 'chalk';
+import fs from 'fs';
+import path from 'path';
 
 console.log(chalk.blue('=== MemeSwipe Issue Fixer ==='));
 console.log(chalk.yellow('This script will run all fix scripts to resolve issues with the app.'));
@@ -38,13 +40,52 @@ async function runAllScripts() {
   console.log(chalk.blue('Step 2: Fixing Button component issues...'));
   runScript('fix-button-issue', 'Fix Button component case sensitivity issues');
   
-  console.log(chalk.blue('Step 3: Fixing Supabase issues...'));
+  console.log(chalk.blue('Step 3: Fixing middleware conflicts...'));
+  try {
+    console.log(chalk.yellow('Checking for middleware conflicts...'));
+    
+    const middlewarePath = path.resolve('src/middleware.ts');
+    const middlewareUserSyncPath = path.resolve('src/middleware-user-sync.ts');
+    
+    const middlewareExists = fs.existsSync(middlewarePath);
+    const middlewareUserSyncExists = fs.existsSync(middlewareUserSyncPath);
+    
+    if (middlewareExists && middlewareUserSyncExists) {
+      console.log(chalk.yellow('Found both middleware.ts and middleware-user-sync.ts files.'));
+      console.log(chalk.yellow('This can cause conflicts. Backing up middleware-user-sync.ts...'));
+      
+      // Backup the middleware-user-sync.ts file
+      const backupPath = path.resolve('src/middleware-user-sync.ts.bak');
+      fs.copyFileSync(middlewareUserSyncPath, backupPath);
+      
+      console.log(chalk.green('Backed up middleware-user-sync.ts to middleware-user-sync.ts.bak'));
+      console.log(chalk.yellow('Please check that middleware.ts includes all necessary functionality.'));
+      console.log(chalk.yellow('You may need to manually combine the two middleware files.'));
+    } else if (!middlewareExists && middlewareUserSyncExists) {
+      console.log(chalk.yellow('Found only middleware-user-sync.ts but not middleware.ts.'));
+      console.log(chalk.yellow('Renaming middleware-user-sync.ts to middleware.ts...'));
+      
+      // Rename middleware-user-sync.ts to middleware.ts
+      fs.copyFileSync(middlewareUserSyncPath, middlewarePath);
+      fs.renameSync(middlewareUserSyncPath, middlewareUserSyncPath + '.bak');
+      
+      console.log(chalk.green('Renamed middleware-user-sync.ts to middleware.ts'));
+    } else if (middlewareExists && !middlewareUserSyncExists) {
+      console.log(chalk.green('Only middleware.ts exists. No conflicts detected.'));
+    } else {
+      console.log(chalk.red('No middleware files found. This may cause authentication issues.'));
+    }
+  } catch (error) {
+    console.error(chalk.red('Error fixing middleware conflicts:'), error.message);
+  }
+  
+  console.log(chalk.blue('Step 4: Fixing Supabase issues...'));
   runScript('fix-supabase-issues', 'Fix Supabase storage and authentication issues');
   
-  console.log(chalk.blue('Step 4: Setting up storage policies...'));
+  console.log(chalk.blue('Step 5: Setting up storage policies...'));
   runScript('setup-storage-policies', 'Set up Supabase storage policies');
   
-  console.log(chalk.blue('Step 5: Initializing storage...'));
+  console.log(chalk.blue('Step 6: Initializing storage...'));
   runScript('init-storage', 'Initialize Supabase storage buckets');
   
   console.log('');

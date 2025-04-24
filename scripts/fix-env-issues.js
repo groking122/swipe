@@ -127,6 +127,7 @@ const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 
 console.log(chalk.blue('Checking Clerk keys...'));
 
+// Check if keys are valid
 if (!clerkPubKey.startsWith('pk_') || clerkPubKey.length < 20) {
   console.log(chalk.red('Invalid Clerk publishable key format. Should start with "pk_" and be at least 20 characters.'));
   console.log(chalk.yellow('Please check your NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.'));
@@ -135,6 +136,18 @@ if (!clerkPubKey.startsWith('pk_') || clerkPubKey.length < 20) {
 if (!clerkSecretKey.startsWith('sk_') || clerkSecretKey.length < 20) {
   console.log(chalk.red('Invalid Clerk secret key format. Should start with "sk_" and be at least 20 characters.'));
   console.log(chalk.yellow('Please check your CLERK_SECRET_KEY.'));
+}
+
+// Check if using production keys in development
+if (process.env.NODE_ENV === 'development' && clerkPubKey.startsWith('pk_live_')) {
+  console.log(chalk.yellow('Warning: Using production Clerk keys in development environment.'));
+  console.log(chalk.yellow('This may cause issues with authentication if the production domain is not accessible.'));
+  console.log(chalk.yellow('Consider using test keys (pk_test_) for development.'));
+}
+
+if (process.env.NODE_ENV === 'development' && clerkSecretKey.startsWith('sk_live_')) {
+  console.log(chalk.yellow('Warning: Using production Clerk secret key in development environment.'));
+  console.log(chalk.yellow('Consider using test keys (sk_test_) for development.'));
 }
 
 // Run the tests

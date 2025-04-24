@@ -12,6 +12,7 @@ If buttons like Feed, Sign Up, or Log In are loading but not completing their ac
 2. **Button Component Issues**: Case sensitivity issues with the Button component imports.
 3. **Supabase Initialization**: Issues with Supabase client initialization.
 4. **Middleware Conflicts**: Conflicts between multiple middleware files.
+5. **Clerk Domain Resolution**: Issues with Clerk trying to connect to non-existent domains.
 
 ### Missing Clerk Login Buttons in Header
 
@@ -115,7 +116,85 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 ### Middleware Conflicts
 
-If you have both `middleware.ts` and `middleware-user-sync.ts`, make sure they don't conflict with each other. You might need to combine them into a single middleware file.
+If you see an error like:
+```
+Error: Cannot find the middleware module
+```
+
+This is because Next.js only supports a single middleware file. If you have both `middleware.ts` and `middleware-user-sync.ts`, they will conflict with each other.
+
+To fix this:
+
+1. Combine the functionality of both middleware files into a single `middleware.ts` file.
+2. Make sure to handle both authentication and user synchronization in this single file.
+3. Delete the `middleware-user-sync.ts` file to avoid conflicts.
+
+Example of a combined middleware file:
+```typescript
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { auth, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { supabaseAdmin } from './utils/supabaseAdmin';
+
+// Define public routes that don't require authentication
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/api/webhooks(.*)",
+  // ... other public routes
+]);
+
+// Define routes that require user sync
+const needsUserSync = createRouteMatcher([
+  '/feed',
+  '/profile',
+  // ... other routes that need user sync
+]);
+
+export async function middleware(request: NextRequest) {
+  // Handle authentication
+  if (isPublicRoute(request)) {
+    return NextResponse.next();
+  }
+  
+  // Handle user sync for authenticated users
+  // ... user sync logic
+  
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    // ... matcher configuration
+  ],
+};
+```
+
+### Clerk Domain Resolution Issues
+
+If you see errors like:
+```
+Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+Clerk: Failed to load Clerk
+```
+
+Or errors mentioning domains like `thememeswipe.com` or `accounts.thememeswipe.com`, this indicates that Clerk is trying to connect to production domains that don't exist or aren't accessible in your development environment.
+
+To fix this:
+
+1. Make sure you're using Clerk test keys (starting with `pk_test_` and `sk_test_`) in development, not production keys (starting with `pk_live_` and `sk_live_`).
+
+2. Update your `.env` file to use test keys:
+```
+# Use test keys for development
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# Comment out production keys
+# NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+# CLERK_SECRET_KEY=sk_live_...
+```
+
+3. If you're still having issues, try creating a new Clerk application specifically for development.
 
 ## Still Having Issues?
 
