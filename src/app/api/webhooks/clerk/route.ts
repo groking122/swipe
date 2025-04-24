@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(req: Request) {
   // Get the webhook signature from the request headers
-  const headersList = headers();
+  const headersList = await headers();
   const svix_id = headersList.get('svix-id');
   const svix_timestamp = headersList.get('svix-timestamp');
   const svix_signature = headersList.get('svix-signature');

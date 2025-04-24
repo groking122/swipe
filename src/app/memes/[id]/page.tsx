@@ -11,12 +11,12 @@ import LikeCount from '@/components/ui/LikeCount';
 import type { Metadata } from 'next';
 
 interface PageProps {
-  params: { id: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = params;
+  const { id } = await params;
   const meme = await getMemeById(id);
   
   if (!meme) {
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function MemePage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   const session = await auth();
   const userId = session?.userId;
   

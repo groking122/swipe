@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client with environment variables
@@ -9,20 +9,21 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify user is authenticated
-    const user = await currentUser();
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const userId = user.id;
-    const memeId = params.id;
+    // Await params to get the ID
+    const { id: memeId } = await params;
+    
     if (!memeId) {
       return NextResponse.json(
         { error: 'Meme ID is required' },
@@ -96,20 +97,21 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify user is authenticated
-    const user = await currentUser();
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const userId = user.id;
-    const memeId = params.id;
+    // Await params to get the ID
+    const { id: memeId } = await params;
+    
     if (!memeId) {
       return NextResponse.json(
         { error: 'Meme ID is required' },

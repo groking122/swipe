@@ -36,7 +36,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the interaction
-    const interaction = await createInteraction(userId, memeId, type as InteractionType);
+    const interaction = await createInteraction({
+      userId,
+      memeId,
+      type: type as InteractionType
+    });
     
     if (!interaction) {
       return NextResponse.json(
