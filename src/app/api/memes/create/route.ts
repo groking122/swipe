@@ -30,18 +30,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Process the Clerk user ID - remove 'user_' prefix if it exists
+    // This ensures compatibility between Clerk IDs and your database UUID format
+    const dbUserId = userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+
     // Verify user exists in our database
-    const userExists = await checkUserExists(userId);
+    const userExists = await checkUserExists(dbUserId);
     if (!userExists) {
-      console.error(`User ${userId} not found in database. This may be a Clerk ID that hasn't been synced to Supabase yet.`);
+      console.error(`User ${dbUserId} not found in database. This may be a Clerk ID that hasn't been synced to Supabase yet.`);
       return NextResponse.json(
         { error: 'User account not fully set up in our system. Please try again in a moment.' },
         { status: 400 }
       );
     }
 
-    // Check monthly upload limit
-    const { allowed, limit, count, remaining } = await checkMonthlyUploadLimit(userId);
+    // Check monthly upload limit - use the processed dbUserId
+    const { allowed, limit, count, remaining } = await checkMonthlyUploadLimit(dbUserId);
     
     if (!allowed) {
       return NextResponse.json(
@@ -88,16 +92,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Upload image to storage
+    // 1. Upload image to storage - use the processed dbUserId for the path
     const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
-    const path = `${userId}/${filename}`;
-    const imagePath = await uploadFile('memes', path, file);
+    const path = `${dbUserId}/${filename}`;
+    
+    // Use 'meme-images' bucket name to match the bucket name in init-storage.js
+    const bucketName = 'meme-images';
+    
+    // Try to upload the file - use let instead of const so we can reassign it if needed
+    let imagePath = await uploadFile(bucketName, path, file);
 
     if (!imagePath) {
-      return NextResponse.json(
-        { error: 'Failed to upload image' },
-        { status: 500 }
-      );
+      console.error(`Failed to upload image to ${bucketName}/${path}`);
+      
+      // Try to initialize the storage bucket explicitly
+      try {
+        const initResponse = await fetch('/api/storage/init', { method: 'GET' });
+        const initData = await initResponse.json();
+        
+        if (initData.success) {
+          console.log('Storage buckets initialized, retrying upload...');
+          
+          // Retry the upload after bucket initialization
+          const retryImagePath = await uploadFile(bucketName, path, file);
+          
+          if (!retryImagePath) {
+            return NextResponse.json(
+              { error: 'Failed to upload image after storage initialization' },
+              { status: 500 }
+            );
+          }
+          
+          // Continue with the retry path
+          imagePath = retryImagePath;
+        } else {
+          return NextResponse.json(
+            { error: 'Failed to initialize storage buckets' },
+            { status: 500 }
+          );
+        }
+      } catch (initError) {
+        console.error('Error initializing storage:', initError);
+        return NextResponse.json(
+          { error: 'Failed to upload image and could not initialize storage' },
+          { status: 500 }
+        );
+      }
     }
 
     // 2. Generate image hash for duplicate detection
@@ -108,9 +148,9 @@ export async function POST(request: NextRequest) {
       console.error('Error generating image hash:', error);
     }
 
-    // Create the meme with new parameter format
+    // Create the meme with new parameter format - use the processed dbUserId
     const meme = await createMeme({
-      userId,
+      userId: dbUserId,
       title,
       imagePath,
       imageHash

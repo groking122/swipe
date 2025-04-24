@@ -10,6 +10,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+/**
+ * Process Clerk user ID to make it compatible with Supabase UUID format
+ */
+function processUserId(userId: string): string {
+  return userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+}
+
 export async function POST(req: Request) {
   // Get the webhook signature from the request headers
   const headersList = await headers();
@@ -68,8 +75,11 @@ export async function POST(req: Request) {
     
     if (id && primaryEmail) {
       try {
+        // Process the Clerk user ID to remove 'user_' prefix for compatibility with Supabase
+        const dbUserId = processUserId(id);
+        
         await upsertUser({
-          id,
+          id: dbUserId, // Use the processed ID
           email: primaryEmail,
           username: username || `${first_name || ''}${last_name || ''}`.toLowerCase() || primaryEmail.split('@')[0],
           avatar_url: image_url,
@@ -89,11 +99,14 @@ export async function POST(req: Request) {
     
     if (id) {
       try {
+        // Process the Clerk user ID to remove 'user_' prefix
+        const dbUserId = processUserId(id);
+        
         // Soft delete the user in Supabase
         await supabase
           .from('users')
           .update({ deleted_at: new Date().toISOString() })
-          .eq('id', id);
+          .eq('id', dbUserId);
         
         return NextResponse.json({ success: true });
       } catch (error) {

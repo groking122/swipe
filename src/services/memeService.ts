@@ -1,14 +1,52 @@
 import { supabase } from '@/utils/supabase';
-import { getFileUrl, uploadFile, deleteFile } from '@/utils/supabase';
+import { getFileUrl, uploadFile, deleteFile, ensureBucketExists } from '@/utils/supabase';
 import type { Meme, MemeStatus, PaginatedResponse } from '@/types';
 import { getUserById } from './serverUserService';
 import { generateImageHash } from '@/utils/imageHash';
+
+// Required storage buckets for the application
+const REQUIRED_BUCKETS = ['meme-images', 'user-avatars'];
+
+/**
+ * Initialize storage buckets for the application
+ * This should be called during application startup
+ */
+export async function initializeStorageBuckets(): Promise<boolean> {
+  console.log('Initializing storage buckets...');
+  
+  let allSuccessful = true;
+  
+  for (const bucket of REQUIRED_BUCKETS) {
+    try {
+      const success = await ensureBucketExists(bucket);
+      
+      if (!success) {
+        console.error(`Failed to initialize bucket: ${bucket}`);
+        allSuccessful = false;
+      } else {
+        console.log(`Successfully initialized bucket: ${bucket}`);
+      }
+    } catch (error) {
+      console.error(`Error initializing bucket ${bucket}:`, error);
+      allSuccessful = false;
+    }
+  }
+  
+  return allSuccessful;
+}
 
 // Upload limits based on user status
 const UPLOAD_LIMITS = {
   free: 10,   // Free users: 10 uploads per month
   premium: 50 // Premium users: 50 uploads per month
 };
+
+/**
+ * Process Clerk user ID to make it compatible with Supabase UUID format
+ */
+function processUserId(userId: string): string {
+  return userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+}
 
 // Add this interface before the createMeme function
 interface CreateMemeParams {
@@ -23,8 +61,11 @@ interface CreateMemeParams {
  */
 export async function checkMonthlyUploadLimit(userId: string): Promise<{ allowed: boolean; limit: number; count: number; remaining: number }> {
   try {
+    // Process the user ID to handle Clerk format
+    const dbUserId = processUserId(userId);
+    
     // Get user to check if they're premium
-    const user = await getUserById(userId);
+    const user = await getUserById(dbUserId);
     // Default to free tier if user is not found or no premium indicator
     // Using bio field as a temporary way to mark premium users until proper field is added
     const isPremium = user?.bio === 'premium' || false;
@@ -37,7 +78,7 @@ export async function checkMonthlyUploadLimit(userId: string): Promise<{ allowed
     const { count, error } = await supabase
       .from('memes')
       .select('id', { count: 'exact', head: true })
-      .eq('creator_id', userId)
+      .eq('creator_id', dbUserId)
       .gte('created_at', startOfMonth);
       
     if (error) {
@@ -96,18 +137,21 @@ export async function checkDuplicateMeme(imageHash: string): Promise<Meme | null
 export async function createMeme(params: CreateMemeParams): Promise<Meme | null> {
   try {
     const { title, imagePath, userId, imageHash } = params;
+    
+    // Process the user ID to handle Clerk format
+    const dbUserId = processUserId(userId);
 
     // Check if the user exists
-    const user = await getUserById(userId);
+    const user = await getUserById(dbUserId);
     if (!user) {
-      console.error('User not found when creating meme', { userId });
+      console.error('User not found when creating meme', { userId: dbUserId });
       return null;
     }
 
     // Check if the user has reached their monthly upload limit
-    const canUpload = await checkMonthlyUploadLimit(userId);
+    const canUpload = await checkMonthlyUploadLimit(dbUserId);
     if (!canUpload.allowed) {
-      console.error('User exceeded monthly upload limit', { userId });
+      console.error('User exceeded monthly upload limit', { userId: dbUserId });
       return null;
     }
 
@@ -125,8 +169,8 @@ export async function createMeme(params: CreateMemeParams): Promise<Meme | null>
       title,
       image_path: imagePath,
       status: 'active',
-      user_id: userId,
-      creator_id: userId // Adding both for compatibility
+      user_id: dbUserId,
+      creator_id: dbUserId // Adding both for compatibility
     };
 
     // Insert the meme into the database
@@ -142,7 +186,7 @@ export async function createMeme(params: CreateMemeParams): Promise<Meme | null>
     }
 
     // Update user's upload count
-    await updateUserUploadCount(userId);
+    await updateUserUploadCount(dbUserId);
 
     return mapDbMemeToMeme(data);
   } catch (error) {
@@ -156,11 +200,14 @@ export async function createMeme(params: CreateMemeParams): Promise<Meme | null>
  */
 async function updateUserUploadCount(userId: string): Promise<void> {
   try {
+    // Process the user ID to handle Clerk format
+    const dbUserId = processUserId(userId);
+    
     // Get current counts
     const { data, error } = await supabase
       .from('users')
       .select('monthly_upload_count, total_uploads')
-      .eq('id', userId)
+      .eq('id', dbUserId)
       .single();
       
     if (error) {
@@ -178,7 +225,7 @@ async function updateUserUploadCount(userId: string): Promise<void> {
         monthly_upload_count: monthlyCount,
         total_uploads: totalCount
       })
-      .eq('id', userId);
+      .eq('id', dbUserId);
       
     if (updateError) {
       console.error('Error updating user upload counts:', updateError);

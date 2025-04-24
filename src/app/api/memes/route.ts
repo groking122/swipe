@@ -8,43 +8,77 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Bucket name for storing meme images
+// Bucket name for storing meme images - ensure this is consistent across the application
 const MEME_BUCKET = 'meme-images';
 
 // Ensure the bucket exists before trying to upload
 async function ensureBucketExists(bucketName: string): Promise<boolean> {
   try {
+    console.log(`Checking if bucket ${bucketName} exists...`);
+    
     // Check if the bucket exists
     const { data: bucket, error: getBucketError } = await supabase.storage
       .getBucket(bucketName);
     
-    // If bucket doesn't exist, create it
-    if (getBucketError && getBucketError.message.includes('not found')) {
-      console.log(`Creating bucket: ${bucketName}`);
-      const { error: createError } = await supabase.storage
-        .createBucket(bucketName, {
-          public: true,
-          fileSizeLimit: 5 * 1024 * 1024 // 5MB limit
-        });
-      
-      if (createError) {
-        console.error(`Failed to create bucket ${bucketName}:`, createError);
-        return false;
-      }
-      
-      // Set public access to the bucket
-      const { error: policyError } = await supabase.storage
-        .from(bucketName)
-        .createSignedUrl('dummy.txt', 1); // This is just to trigger policy creation
-      
-      console.log(`Bucket ${bucketName} created successfully`);
+    // If bucket exists, return true
+    if (!getBucketError) {
+      console.log(`Bucket ${bucketName} already exists`);
       return true;
-    } else if (getBucketError) {
+    }
+    
+    // If error is not "Bucket not found", log and return false
+    if (getBucketError && !getBucketError.message.includes('not found')) {
       console.error(`Error checking bucket ${bucketName}:`, getBucketError);
       return false;
     }
     
-    console.log(`Bucket ${bucketName} already exists`);
+    // Bucket not found, try to create it
+    console.log(`Creating bucket: ${bucketName}`);
+    
+    // Create the bucket
+    const { error: createError } = await supabase.storage
+      .createBucket(bucketName, {
+        public: true,
+        fileSizeLimit: 5 * 1024 * 1024 // 5MB limit
+      });
+    
+    if (createError) {
+      console.error(`Failed to create bucket ${bucketName}:`, createError);
+      return false;
+    }
+    
+    // Set up public access policy for the bucket
+    try {
+      // Create a dummy signed URL to trigger policy creation
+      const { error: signedUrlError } = await supabase.storage
+        .from(bucketName)
+        .createSignedUrl('dummy.txt', 60);
+      
+      if (signedUrlError) {
+        console.warn(`Warning: Could not create signed URL for bucket ${bucketName}:`, signedUrlError);
+      }
+      
+      // Get public URL to verify public access
+      const { data: publicUrlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl('dummy.txt');
+      
+      if (!publicUrlData || !publicUrlData.publicUrl) {
+        console.warn(`Warning: Could not get public URL for bucket ${bucketName}`);
+      }
+    } catch (policyError) {
+      // Policy creation might fail but bucket could still be usable
+      console.warn(`Warning: Could not set public access policy for bucket ${bucketName}:`, policyError);
+    }
+    
+    // Verify bucket was created successfully
+    const { error: verifyError } = await supabase.storage.getBucket(bucketName);
+    if (verifyError) {
+      console.error(`Bucket ${bucketName} creation verification failed:`, verifyError);
+      return false;
+    }
+    
+    console.log(`Bucket ${bucketName} created successfully`);
     return true;
   } catch (error) {
     console.error(`Error in ensureBucketExists for ${bucketName}:`, error);
@@ -120,18 +154,56 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
 
-    // Upload file to Supabase Storage
-    const { error: uploadError } = await supabase.storage
+    // Upload file to Supabase Storage with retry logic
+    let uploadError;
+    let uploadSuccess = false;
+    
+    // First attempt
+    const uploadResult = await supabase.storage
       .from(MEME_BUCKET)
       .upload(filePath, buffer, {
         contentType: file.type,
         cacheControl: '3600',
+        upsert: true, // Use upsert to handle potential conflicts
       });
-
+    
+    uploadError = uploadResult.error;
+    
+    // If first attempt failed, try to initialize the bucket and retry
     if (uploadError) {
-      console.error('Error uploading file:', uploadError);
+      console.error('Initial upload attempt failed:', uploadError);
+      
+      // Try to ensure the bucket exists again
+      const bucketReinitialized = await ensureBucketExists(MEME_BUCKET);
+      
+      if (bucketReinitialized) {
+        console.log('Bucket reinitialized, retrying upload...');
+        
+        // Retry the upload
+        const retryResult = await supabase.storage
+          .from(MEME_BUCKET)
+          .upload(filePath, buffer, {
+            contentType: file.type,
+            cacheControl: '3600',
+            upsert: true,
+          });
+        
+        if (!retryResult.error) {
+          console.log('Retry upload successful');
+          uploadSuccess = true;
+        } else {
+          console.error('Retry upload failed:', retryResult.error);
+          uploadError = retryResult.error;
+        }
+      }
+    } else {
+      uploadSuccess = true;
+    }
+
+    if (!uploadSuccess) {
+      console.error('Error uploading file after retries:', uploadError);
       return NextResponse.json(
-        { error: 'Failed to upload image' },
+        { error: 'Failed to upload image', details: uploadError?.message },
         { status: 500 }
       );
     }

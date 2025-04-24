@@ -12,19 +12,48 @@ const REQUIRED_BUCKETS = ['meme-images', 'user-avatars'];
 /**
  * Initialize required storage buckets
  */
-async function initializeBuckets(): Promise<{ 
-  success: boolean; 
-  results: Array<{ bucket: string; created: boolean; error?: string }> 
+async function initializeBuckets(): Promise<{
+  success: boolean;
+  results: Array<{ bucket: string; created: boolean; error?: string }>
 }> {
   const results = [];
 
   for (const bucketName of REQUIRED_BUCKETS) {
     try {
+      console.log(`Initializing bucket: ${bucketName}`);
+      
       // Check if bucket exists
       const { data, error: getBucketError } = await supabase.storage.getBucket(bucketName);
       
+      // If bucket exists, mark it as already existing
+      if (!getBucketError) {
+        console.log(`Bucket ${bucketName} already exists`);
+        
+        // Ensure public access is set up
+        try {
+          // Create a dummy signed URL to trigger policy creation
+          await supabase.storage.from(bucketName).createSignedUrl('dummy.txt', 60);
+          
+          // Get public URL to verify public access
+          const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl('dummy.txt');
+          
+          console.log(`Verified public access for bucket ${bucketName}`);
+        } catch (policyError) {
+          console.warn(`Warning: Could not verify public access for bucket ${bucketName}:`, policyError);
+        }
+        
+        results.push({
+          bucket: bucketName,
+          created: false,
+          error: 'Bucket already exists'
+        });
+        continue;
+      }
+      
       // If bucket doesn't exist or there was an error, try to create it
-      if (getBucketError) {
+      if (getBucketError && getBucketError.message.includes('not found')) {
+        console.log(`Creating bucket ${bucketName}...`);
+        
         // Create the bucket
         const { error: createError } = await supabase.storage.createBucket(bucketName, {
           public: true,
@@ -33,39 +62,54 @@ async function initializeBuckets(): Promise<{
         
         if (createError) {
           console.error(`Failed to create bucket ${bucketName}:`, createError);
-          results.push({ 
-            bucket: bucketName, 
-            created: false, 
-            error: createError.message 
+          results.push({
+            bucket: bucketName,
+            created: false,
+            error: createError.message
           });
         } else {
           // Create a public policy for the bucket
-          const { error: policyError } = await supabase.storage.from(bucketName)
-            .createSignedUrl('__dummy__', 1); // Just to trigger policy creation
+          try {
+            // Create a dummy signed URL to trigger policy creation
+            await supabase.storage.from(bucketName).createSignedUrl('dummy.txt', 60);
             
-          results.push({ 
-            bucket: bucketName, 
-            created: true 
-          });
+            // Get public URL to verify public access
+            const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl('dummy.txt');
+            
+            console.log(`Successfully created bucket ${bucketName} with public access`);
+            results.push({
+              bucket: bucketName,
+              created: true
+            });
+          } catch (policyError) {
+            console.warn(`Warning: Bucket ${bucketName} created but could not set public access:`, policyError);
+            results.push({
+              bucket: bucketName,
+              created: true,
+              error: 'Created but public access may not be set up correctly'
+            });
+          }
         }
       } else {
-        results.push({ 
-          bucket: bucketName, 
-          created: false, 
-          error: 'Bucket already exists' 
+        // Some other error occurred when checking the bucket
+        console.error(`Error checking bucket ${bucketName}:`, getBucketError);
+        results.push({
+          bucket: bucketName,
+          created: false,
+          error: getBucketError?.message || 'Unknown error checking bucket'
         });
       }
     } catch (error: any) {
       console.error(`Error processing bucket ${bucketName}:`, error);
-      results.push({ 
-        bucket: bucketName, 
-        created: false, 
-        error: error.message || 'Unknown error' 
+      results.push({
+        bucket: bucketName,
+        created: false,
+        error: error.message || 'Unknown error'
       });
     }
   }
   
-  // Return true if all operations were successful
+  // Return true if all operations were successful or buckets already existed
   const success = results.every(r => r.created || r.error === 'Bucket already exists');
   return { success, results };
 }

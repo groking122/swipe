@@ -37,6 +37,13 @@ interface DbUser {
 }
 
 /**
+ * Process Clerk user ID to make it compatible with Supabase UUID format
+ */
+function processUserId(userId: string): string {
+  return userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+}
+
+/**
  * Create or update a user in the database
  */
 export async function upsertUser(user: {
@@ -52,18 +59,22 @@ export async function upsertUser(user: {
       return null;
     }
 
+    // Process the user ID - note: this should already be processed in the webhook handler
+    // but adding it here for safety
+    const dbUserId = processUserId(user.id);
+
     // Use mock data in development mode
     if (useMockData) {
       console.info('Using mock data for user upsert');
       const timestamp = new Date().toISOString();
       const mockUser: User = {
-        id: user.id,
+        id: dbUserId,
         username: user.username || user.email.split('@')[0],
         email: user.email,
         avatarUrl: user.avatar_url,
         createdAt: timestamp,
       };
-      mockUsers[user.id] = mockUser;
+      mockUsers[dbUserId] = mockUser;
       return mockUser;
     }
 
@@ -74,7 +85,7 @@ export async function upsertUser(user: {
     }
 
     console.debug('Upserting user in Supabase', {
-      id: user.id,
+      id: dbUserId,
       email: user.email,
       username: user.username || user.email.split('@')[0]
     });
@@ -82,7 +93,7 @@ export async function upsertUser(user: {
     const { data, error } = await supabase
       .from('users')
       .upsert({
-        id: user.id,
+        id: dbUserId,
         email: user.email,
         username: user.username || user.email.split('@')[0],
         avatar_url: user.avatar_url || null,
@@ -118,10 +129,13 @@ export async function getUserById(userId: string): Promise<User | null> {
       return null;
     }
 
+    // Process the user ID to handle Clerk format
+    const dbUserId = processUserId(userId);
+
     // Use mock data in development mode
     if (useMockData) {
       console.info('Using mock data for getUserById');
-      return mockUsers[userId] || null;
+      return mockUsers[dbUserId] || null;
     }
 
     // Ensure Supabase client is available
@@ -130,12 +144,12 @@ export async function getUserById(userId: string): Promise<User | null> {
       return null;
     }
 
-    console.debug('Fetching user from Supabase', { userId });
+    console.debug('Fetching user from Supabase', { userId: dbUserId });
 
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', userId)
+      .eq('id', dbUserId)
       .single();
 
     if (error) {
@@ -144,7 +158,7 @@ export async function getUserById(userId: string): Promise<User | null> {
     }
 
     if (!data) {
-      console.warn(`User not found with ID: ${userId}`);
+      console.warn(`User not found with ID: ${dbUserId}`);
       return null;
     }
 
@@ -168,17 +182,20 @@ export async function updateUserProfile(
       return null;
     }
 
+    // Process the user ID to handle Clerk format
+    const dbUserId = processUserId(userId);
+
     // Use mock data in development mode
     if (useMockData) {
       console.info('Using mock data for updateUserProfile');
-      if (mockUsers[userId]) {
-        mockUsers[userId] = {
-          ...mockUsers[userId],
-          username: updates.username || mockUsers[userId].username,
-          bio: updates.bio || mockUsers[userId].bio,
-          avatarUrl: updates.avatar_url || mockUsers[userId].avatarUrl,
+      if (mockUsers[dbUserId]) {
+        mockUsers[dbUserId] = {
+          ...mockUsers[dbUserId],
+          username: updates.username || mockUsers[dbUserId].username,
+          bio: updates.bio || mockUsers[dbUserId].bio,
+          avatarUrl: updates.avatar_url || mockUsers[dbUserId].avatarUrl,
         };
-        return mockUsers[userId];
+        return mockUsers[dbUserId];
       }
       return null;
     }
@@ -198,7 +215,7 @@ export async function updateUserProfile(
     const { data, error } = await supabase
       .from('users')
       .update(updatesWithTimestamp)
-      .eq('id', userId)
+      .eq('id', dbUserId)
       .select()
       .single();
 
