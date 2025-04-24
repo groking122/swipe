@@ -53,7 +53,7 @@ export async function GET(
     const formattedMeme = {
       id: meme.id,
       title: meme.title,
-      imageUrl: meme.image_url,
+      imageUrl: meme.image_path,
       status: meme.status,
       createdAt: meme.created_at,
       user: meme.users ? {

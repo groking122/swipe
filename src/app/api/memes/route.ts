@@ -147,7 +147,6 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           title,
-          image_url: publicUrl,
           image_path: filePath,
           user_id: userId,
           status: 'active',
