@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { createMeme, checkMonthlyUploadLimit } from '@/services/memeService';
 import { uploadFile } from '@/utils/supabase';
 import { generateImageHash } from '@/utils/imageHash';
+import { checkUserExists } from '@/services/serverUserService';
 
 // This config is needed for file uploads
 export const config = {
@@ -26,6 +27,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Verify user exists in our database
+    const userExists = await checkUserExists(userId);
+    if (!userExists) {
+      console.error(`User ${userId} not found in database. This may be a Clerk ID that hasn't been synced to Supabase yet.`);
+      return NextResponse.json(
+        { error: 'User account not fully set up in our system. Please try again in a moment.' },
+        { status: 400 }
       );
     }
 

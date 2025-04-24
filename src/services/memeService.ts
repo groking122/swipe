@@ -1,7 +1,7 @@
 import { supabase } from '@/utils/supabase';
 import { getFileUrl, uploadFile, deleteFile } from '@/utils/supabase';
 import type { Meme, MemeStatus, PaginatedResponse } from '@/types';
-import { getUserById } from './userService';
+import { getUserById } from './serverUserService';
 import { generateImageHash } from '@/utils/imageHash';
 
 // Upload limits based on user status
@@ -89,53 +89,66 @@ export async function checkDuplicateMeme(imageHash: string): Promise<Meme | null
 }
 
 /**
- * Create a new meme after checking upload limits and potential duplicates
+ * Creates a new meme in the database
+ * @param params Object containing meme creation parameters
+ * @returns The created meme or null if there was an error
  */
 export async function createMeme(params: CreateMemeParams): Promise<Meme | null> {
-  const { title, imagePath, userId, imageHash } = params;
-  
-  // First check if the user has reached their monthly upload limit
-  const canUpload = await checkMonthlyUploadLimit(userId);
-  if (!canUpload.allowed) {
-    throw new Error(`Monthly upload limit reached. Limit: ${canUpload.limit}, Current: ${canUpload.count}`);
-  }
-  
-  // Check for duplicate meme with same hash
-  if (imageHash) {
-    const isDuplicate = await checkDuplicateMeme(imageHash);
-    if (isDuplicate) {
-      throw new Error('Similar meme already exists');
+  try {
+    const { title, imagePath, userId, imageHash } = params;
+
+    // Check if the user exists
+    const user = await getUserById(userId);
+    if (!user) {
+      console.error('User not found when creating meme', { userId });
+      return null;
     }
-  }
-  
-  // Prepare the data object for Supabase with both user_id and creator_id
-  const memeData = {
-    title,
-    image_path: imagePath,
-    user_id: userId,     // Ensure user_id is set for compatibility
-    creator_id: userId,  // Ensure creator_id is set for compatibility
-    status: 'active',
-    image_hash: imageHash,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  
-  // Create the meme in the database
-  const { data, error } = await supabase
-    .from('memes')
-    .insert(memeData)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating meme:', error);
+
+    // Check if the user has reached their monthly upload limit
+    const canUpload = await checkMonthlyUploadLimit(userId);
+    if (!canUpload.allowed) {
+      console.error('User exceeded monthly upload limit', { userId });
+      return null;
+    }
+
+    // Check if a meme with the same hash already exists
+    if (imageHash) {
+      const duplicate = await checkDuplicateMeme(imageHash);
+      if (duplicate) {
+        console.error('Duplicate meme detected', { imageHash });
+        return null;
+      }
+    }
+
+    // Prepare the meme data (using both user_id and creator_id for compatibility)
+    const memeData = {
+      title,
+      image_path: imagePath,
+      status: 'active',
+      user_id: userId,
+      creator_id: userId // Adding both for compatibility
+    };
+
+    // Insert the meme into the database
+    const { data, error } = await supabase
+      .from('memes')
+      .insert(memeData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating meme:', error);
+      return null;
+    }
+
+    // Update user's upload count
+    await updateUserUploadCount(userId);
+
+    return mapDbMemeToMeme(data);
+  } catch (error) {
+    console.error('Error in createMeme:', error);
     return null;
   }
-  
-  // Update user's monthly upload count
-  await updateUserUploadCount(userId);
-  
-  return mapDbMemeToMeme(data);
 }
 
 /**
@@ -314,27 +327,18 @@ export async function deleteMeme(
 }
 
 /**
- * Map database meme object to Meme type
- * This function is resilient to either user_id or creator_id being present
+ * Maps a database meme object to our Meme type
  */
 export function mapDbMemeToMeme(dbMeme: any): Meme {
-  // Determine creator ID - could be in either user_id or creator_id
+  // Handle either creator_id or user_id being present
   const creatorId = dbMeme.creator_id || dbMeme.user_id;
   
-  // Map DB object to our Meme type
   return {
     id: dbMeme.id,
-    creatorId: creatorId,
     title: dbMeme.title,
-    imagePath: dbMeme.image_path || dbMeme.image_url || '',
+    imagePath: dbMeme.image_path,
+    creatorId,
+    status: dbMeme.status as MemeStatus,
     createdAt: dbMeme.created_at,
-    status: dbMeme.status || 'active',
-    creator: dbMeme.users ? {
-      id: dbMeme.users.id,
-      username: dbMeme.users.username,
-      email: '',
-      createdAt: dbMeme.users.created_at || '',
-      avatarUrl: dbMeme.users.avatar_url || undefined
-    } : undefined
   };
 } 
