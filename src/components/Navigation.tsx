@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 import { UserButton } from '@clerk/nextjs';
 import Button from './ui/Button';
 
 export default function Navigation() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   return (
     <header className="bg-white shadow-sm">
@@ -24,7 +24,7 @@ export default function Navigation() {
             Feed
           </Link>
           
-          {!isLoading && (
+          {!loading && (
             isAuthenticated ? (
               <>
                 <Link href="/memes" className="text-gray-600 hover:text-gray-900">

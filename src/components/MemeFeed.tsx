@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getRandomMemes } from '@/services/memeDiscoveryService';
 import { createInteraction } from '@/services/interactionService';
 import SwipeCard from './SwipeCard';
-import { useAuth } from '@/hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 import type { Meme } from '@/types';
 
 interface MemeFeedProps {

@@ -3,14 +3,17 @@
 import { useState, useRef, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth } from '@/hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 
 export default function CreateMemePage() {
   const router = useRouter();
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const auth = useAuth();
+  const isAuthenticated = auth.isAuthenticated;
+  const user = auth.user;
+  const isLoading = auth.loading;
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [title, setTitle] = useState('');
