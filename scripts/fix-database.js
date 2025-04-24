@@ -34,12 +34,54 @@ async function fixDatabase() {
     if (error) {
       console.error(chalk.red('Error executing SQL script:'), error);
       
+      // Try direct SQL execution
+      const directSuccess = await executeDirectSQL(sqlScript);
+      if (directSuccess) {
+        console.log(chalk.green('SQL executed successfully via direct method'));
+        return true;
+      }
+      
       // Attempt alternative approach with RPC call
       console.log(chalk.yellow('Trying alternative fix with direct column rename...'));
       const { error: rpcError } = await supabase.rpc('fix_meme_image_columns');
       
       if (rpcError) {
         console.error(chalk.red('Error with alternative fix:'), rpcError);
+        
+        // Create a simplified SQL script with just the essential column fix
+        const simplifiedSQL = `
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+              AND table_name = 'memes' 
+              AND column_name = 'image_url'
+            ) AND NOT EXISTS (
+              SELECT 1 FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+              AND table_name = 'memes' 
+              AND column_name = 'image_path'
+            ) THEN
+              ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;
+            ELSIF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+              AND table_name = 'memes' 
+              AND column_name = 'image_path'
+            ) THEN
+              ALTER TABLE public.memes ADD COLUMN image_path TEXT;
+            END IF;
+          END
+          $$;
+        `;
+        
+        // Try direct SQL with simplified script
+        const simplifiedSuccess = await executeDirectSQL(simplifiedSQL);
+        if (simplifiedSuccess) {
+          console.log(chalk.green('Simplified SQL fix executed successfully'));
+          return true;
+        }
         
         // Manual SQL approach
         console.log(chalk.yellow('Attempting manual SQL fix...'));
@@ -68,7 +110,12 @@ async function fixDatabase() {
           
           if (renameError) {
             console.error(chalk.red('Error renaming column:'), renameError);
-            return false;
+            
+            // Try direct SQL for rename
+            const renameSuccess = await executeDirectSQL('ALTER TABLE public.memes RENAME COLUMN image_url TO image_path;');
+            if (!renameSuccess) {
+              return false;
+            }
           }
           
           console.log(chalk.green('Column renamed successfully!'));
@@ -81,7 +128,12 @@ async function fixDatabase() {
           
           if (addColumnError) {
             console.error(chalk.red('Error adding column:'), addColumnError);
-            return false;
+            
+            // Try direct SQL for adding column
+            const addSuccess = await executeDirectSQL('ALTER TABLE public.memes ADD COLUMN image_path TEXT;');
+            if (!addSuccess) {
+              return false;
+            }
           }
           
           console.log(chalk.green('Column added successfully!'));
@@ -99,6 +151,38 @@ async function fixDatabase() {
     return true;
   } catch (error) {
     console.error(chalk.red('Unexpected error:'), error);
+    return false;
+  }
+}
+
+// Try direct SQL execution if RPC methods fail
+async function executeDirectSQL(sql) {
+  try {
+    console.log(chalk.yellow('Executing direct SQL...'));
+    // Use REST API to execute SQL directly
+    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseServiceKey,
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        query: sql
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(chalk.red('SQL execution failed:'), errorText);
+      return false;
+    }
+
+    console.log(chalk.green('Direct SQL executed successfully'));
+    return true;
+  } catch (error) {
+    console.error(chalk.red('Direct SQL execution error:'), error);
     return false;
   }
 }
