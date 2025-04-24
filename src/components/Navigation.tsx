@@ -1,12 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import useAuth from '@/hooks/useAuth';
-import { UserButton } from '@clerk/nextjs';
+import { UserButton, SignInButton, SignUpButton, useAuth } from '@clerk/nextjs';
 import Button from './ui/Button';
 
 export default function Navigation() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
 
   return (
     <header className="bg-white shadow-sm">
@@ -24,8 +23,8 @@ export default function Navigation() {
             Feed
           </Link>
           
-          {!loading && (
-            isAuthenticated ? (
+          {isLoaded && (
+            isSignedIn ? (
               <>
                 <Link href="/memes" className="text-gray-600 hover:text-gray-900">
                   Memes
@@ -37,12 +36,12 @@ export default function Navigation() {
               </>
             ) : (
               <>
-                <Link href="/sign-in" passHref>
+                <SignInButton mode="modal">
                   <Button variant="outline" size="sm">Sign In</Button>
-                </Link>
-                <Link href="/sign-up" passHref>
+                </SignInButton>
+                <SignUpButton mode="modal">
                   <Button size="sm">Sign Up</Button>
-                </Link>
+                </SignUpButton>
               </>
             )
           )}
@@ -50,4 +49,4 @@ export default function Navigation() {
       </div>
     </header>
   );
-} 
+}

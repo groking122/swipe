@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Button from '../components/ui/Button';
 import { Card, CardHeader, CardContent, CardFooter } from '../components/ui/Card';
-import Input from '../components/ui/Input';
+import { SignInButton, SignUpButton } from '@clerk/nextjs';
 
 export default function Home() {
   // Use a fixed year value instead of dynamic Date call
@@ -21,23 +21,16 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">Sign up to start swiping through memes!</p>
-            <div className="space-y-4">
-              <Input 
-                label="Email" 
-                type="email" 
-                placeholder="your@email.com" 
-              />
-              <Input 
-                label="Password" 
-                type="password" 
-                placeholder="••••••••" 
-              />
-            </div>
+            <p className="text-gray-600">Create an account to upload, save, and share your favorite memes with friends.</p>
           </CardContent>
           <CardFooter>
             <div className="flex flex-col space-y-2">
-              <Button>Sign Up</Button>
-              <Button variant="outline">Already have an account? Log in</Button>
+              <SignUpButton mode="modal">
+                <Button>Sign Up</Button>
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <Button variant="outline">Already have an account? Log in</Button>
+              </SignInButton>
             </div>
           </CardFooter>
         </Card>
