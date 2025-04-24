@@ -317,7 +317,7 @@ export async function deleteMeme(
  * Map database meme object to Meme type
  * This function is resilient to either user_id or creator_id being present
  */
-function mapDbMemeToMeme(dbMeme: any): Meme {
+export function mapDbMemeToMeme(dbMeme: any): Meme {
   // Determine creator ID - could be in either user_id or creator_id
   const creatorId = dbMeme.creator_id || dbMeme.user_id;
   

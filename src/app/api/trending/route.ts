@@ -56,10 +56,30 @@ export async function GET(request: NextRequest) {
 
     if (interactionError) {
       console.error('Error getting trending memes:', interactionError);
-      return NextResponse.json(
-        { error: 'Failed to fetch trending memes' },
-        { status: 500 }
-      );
+      
+      // Fallback to recent memes if RPC fails
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('memes')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+        
+      if (fallbackError || !fallbackData) {
+        return NextResponse.json(
+          { error: 'Failed to fetch trending memes' },
+          { status: 500 }
+        );
+      }
+      
+      // Use fallback data instead
+      const mappedMemes = fallbackData.map(mapDbMemeToMeme);
+      return NextResponse.json({
+        data: mappedMemes,
+        timeframe,
+        count: mappedMemes.length,
+        note: 'Using recent memes as fallback'
+      });
     }
 
     if (!interactionData || interactionData.length === 0) {
@@ -73,13 +93,40 @@ export async function GET(request: NextRequest) {
     // Then, get the actual meme data
     const memeIds = interactionData.map((item: InteractionCountItem) => item.meme_id);
     
-    const { data: memes, error: memesError } = await supabase
-      .from('memes')
-      .select('*, users:user_id(id, username, avatar_url)')
-      .in('id', memeIds)
-      .eq('status', 'active');
+    // Try both creator_id and user_id for the join, to handle either field being present
+    // First try with creator_id
+    let memes;
+    let memesError;
+    
+    try {
+      const { data, error } = await supabase
+        .from('memes')
+        .select('*, users:creator_id(id, username, avatar_url)')
+        .in('id', memeIds)
+        .eq('status', 'active');
+        
+      memes = data;
+      memesError = error;
+      
+      // If that failed, try with user_id
+      if (error || !data || data.length === 0) {
+        const { data: userData, error: userError } = await supabase
+          .from('memes')
+          .select('*, users:user_id(id, username, avatar_url)')
+          .in('id', memeIds)
+          .eq('status', 'active');
+          
+        if (!userError && userData && userData.length > 0) {
+          memes = userData;
+          memesError = null;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching meme details:', error);
+      memesError = error;
+    }
 
-    if (memesError) {
+    if (memesError || !memes) {
       console.error('Error getting meme details:', memesError);
       return NextResponse.json(
         { error: 'Failed to fetch meme details' },
@@ -89,7 +136,7 @@ export async function GET(request: NextRequest) {
 
     // Sort the memes to match the order of memeIds and map to application model
     const sortedMemes = memeIds
-      .map((id: string) => memes.find((meme) => meme.id === id))
+      .map((id: string) => memes.find((meme: any) => meme.id === id))
       .filter(Boolean)
       .map(mapDbMemeToMeme);
 

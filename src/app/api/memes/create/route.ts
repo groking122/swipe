@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createMeme, checkMonthlyUploadLimit } from '@/services/memeService';
+import { uploadFile } from '@/utils/supabase';
+import { generateImageHash } from '@/utils/imageHash';
 
 // This config is needed for file uploads
 export const config = {
@@ -75,8 +77,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the meme
-    const meme = await createMeme(userId, title, file);
+    // 1. Upload image to storage
+    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+    const path = `${userId}/${filename}`;
+    const imagePath = await uploadFile('memes', path, file);
+
+    if (!imagePath) {
+      return NextResponse.json(
+        { error: 'Failed to upload image' },
+        { status: 500 }
+      );
+    }
+
+    // 2. Generate image hash for duplicate detection
+    let imageHash;
+    try {
+      imageHash = await generateImageHash(file);
+    } catch (error) {
+      console.error('Error generating image hash:', error);
+    }
+
+    // Create the meme with new parameter format
+    const meme = await createMeme({
+      userId,
+      title,
+      imagePath,
+      imageHash
+    });
     
     if (!meme) {
       return NextResponse.json(
