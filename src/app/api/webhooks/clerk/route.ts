@@ -4,6 +4,8 @@ import { Webhook } from 'svix';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { upsertUser } from '@/services/userService';
 import { createClient } from '@supabase/supabase-js';
+import { retry } from '@/utils/retry';
+import { normalizeClerkUserId } from '@/utils/clerk';
 
 // Initialize Supabase admin client for direct database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -17,21 +19,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
  * Process Clerk user ID to make it compatible with Supabase UUID format
  * Handles both formats: with 'user_' prefix and without
  */
-function processUserId(userId: string): string {
-  // Log the original user ID for debugging
-  console.log('Processing Clerk user ID:', userId);
-  
-  // Handle IDs with 'user_' prefix
-  if (userId.startsWith('user_')) {
-    const processedId = userId.replace('user_', '');
-    console.log('Processed ID (removed prefix):', processedId);
-    return processedId;
-  }
-  
-  // If no prefix, return as is
-  console.log('ID has no prefix, using as is:', userId);
-  return userId;
-}
 
 export async function POST(req: Request) {
   // Get the webhook signature from the request headers
@@ -92,7 +79,7 @@ export async function POST(req: Request) {
     if (id && primaryEmail) {
       try {
         // Process the Clerk user ID to remove 'user_' prefix for compatibility with Supabase
-        const dbUserId = processUserId(id);
+        const dbUserId = normalizeClerkUserId(id);
         
         // Generate a username if not provided
         const generatedUsername = username ||
@@ -107,11 +94,13 @@ export async function POST(req: Request) {
         });
         
         // First check if user exists
-        const { data: existingUser, error: checkError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', dbUserId)
-          .single();
+        const { data: existingUser, error: checkError } = await retry(() =>
+          supabase
+            .from('users')
+            .select('id')
+            .eq('id', dbUserId)
+            .single(), 3, 500
+        );
         
         if (checkError) {
           if (checkError.message.includes('No rows found')) {
@@ -123,15 +112,17 @@ export async function POST(req: Request) {
         
         if (existingUser) {
           // Update existing user
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({
-              email: primaryEmail,
-              username: generatedUsername,
-              avatar_url: image_url,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', dbUserId);
+          const { error: updateError } = await retry(() =>
+            supabase
+              .from('users')
+              .update({
+                email: primaryEmail,
+                username: generatedUsername,
+                avatar_url: image_url,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', dbUserId), 3, 500
+          );
           
           if (updateError) {
             console.error('Error updating user in Supabase:', updateError);
@@ -144,16 +135,18 @@ export async function POST(req: Request) {
           console.log('User updated successfully in Supabase:', dbUserId);
         } else {
           // Create new user
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: dbUserId,
-              email: primaryEmail,
-              username: generatedUsername,
-              avatar_url: image_url,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
+          const { error: insertError } = await retry(() =>
+            supabase
+              .from('users')
+              .insert({
+                id: dbUserId,
+                email: primaryEmail,
+                username: generatedUsername,
+                avatar_url: image_url,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }), 3, 500
+          );
           
           if (insertError) {
             console.error('Error creating user in Supabase:', insertError);
@@ -162,15 +155,17 @@ export async function POST(req: Request) {
             if (insertError.message.includes('duplicate key') || insertError.message.includes('unique constraint')) {
               console.log('Duplicate key error, trying to update instead');
               
-              const { error: updateError } = await supabase
-                .from('users')
-                .update({
-                  email: primaryEmail,
-                  username: generatedUsername,
-                  avatar_url: image_url,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', dbUserId);
+              const { error: updateError } = await retry(() =>
+                supabase
+                  .from('users')
+                  .update({
+                    email: primaryEmail,
+                    username: generatedUsername,
+                    avatar_url: image_url,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', dbUserId), 3, 500
+              );
               
               if (updateError) {
                 console.error('Error updating user after insert failed:', updateError);
@@ -214,13 +209,15 @@ export async function POST(req: Request) {
     if (id) {
       try {
         // Process the Clerk user ID to remove 'user_' prefix
-        const dbUserId = processUserId(id);
+        const dbUserId = normalizeClerkUserId(id);
         
         // Soft delete the user in Supabase
-        await supabase
-          .from('users')
-          .update({ deleted_at: new Date().toISOString() })
-          .eq('id', dbUserId);
+        await retry(() =>
+          supabase
+            .from('users')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', dbUserId), 3, 500
+        );
         
         return NextResponse.json({ success: true });
       } catch (error) {

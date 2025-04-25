@@ -1,5 +1,6 @@
 import { supabase } from '@/utils/supabase';
 import { User } from '@/types';
+import { normalizeClerkUserId } from '@/utils/clerk';
 
 interface DbUser {
   id: string;
@@ -10,25 +11,6 @@ interface DbUser {
   created_at: string;
 }
 
-/**
- * Process Clerk user ID to make it compatible with Supabase UUID format
- * Handles both formats: with 'user_' prefix and without
- */
-function processUserId(userId: string): string {
-  // Log the original user ID for debugging
-  console.debug('Processing Clerk user ID:', userId);
-  
-  // Handle IDs with 'user_' prefix
-  if (userId.startsWith('user_')) {
-    const processedId = userId.replace('user_', '');
-    console.debug('Processed ID (removed prefix):', processedId);
-    return processedId;
-  }
-  
-  // If no prefix, return as is
-  console.debug('ID has no prefix, using as is:', userId);
-  return userId;
-}
 
 /**
  * Get a user by ID from the server
@@ -40,8 +22,8 @@ export async function getUserById(userId: string): Promise<User | null> {
       return null;
     }
 
-    // Process the Clerk user ID to handle the 'user_' prefix
-    const dbUserId = processUserId(userId);
+    // Normalize the Clerk user ID for compatibility with Supabase
+    const dbUserId = normalizeClerkUserId(userId);
     
     console.debug('Fetching user from Supabase', { originalId: userId, processedId: dbUserId });
 
@@ -81,8 +63,8 @@ export async function checkUserExists(userId: string): Promise<boolean> {
   try {
     if (!userId) return false;
 
-    // Process the Clerk user ID to handle the 'user_' prefix
-    const dbUserId = processUserId(userId);
+    // Normalize the Clerk user ID for compatibility with Supabase
+    const dbUserId = normalizeClerkUserId(userId);
 
     const { count, error } = await supabase
       .from('users')

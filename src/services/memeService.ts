@@ -1,4 +1,5 @@
 import { supabase } from '@/utils/supabase';
+import { normalizeClerkUserId } from '@/utils/clerk';
 import { getFileUrl, uploadFile, deleteFile, ensureBucketExists } from '@/utils/supabase';
 import type { Meme, MemeStatus, PaginatedResponse } from '@/types';
 import { getUserById } from './serverUserService';
@@ -41,12 +42,6 @@ const UPLOAD_LIMITS = {
   premium: 50 // Premium users: 50 uploads per month
 };
 
-/**
- * Process Clerk user ID to make it compatible with Supabase UUID format
- */
-function processUserId(userId: string): string {
-  return userId.startsWith('user_') ? userId.replace('user_', '') : userId;
-}
 
 // Add this interface before the createMeme function
 interface CreateMemeParams {
@@ -61,8 +56,8 @@ interface CreateMemeParams {
  */
 export async function checkMonthlyUploadLimit(userId: string): Promise<{ allowed: boolean; limit: number; count: number; remaining: number }> {
   try {
-    // Process the user ID to handle Clerk format
-    const dbUserId = processUserId(userId);
+    // Normalize the user ID for Clerk format
+    const dbUserId = normalizeClerkUserId(userId);
     
     // Get user to check if they're premium
     const user = await getUserById(dbUserId);
@@ -138,8 +133,8 @@ export async function createMeme(params: CreateMemeParams): Promise<Meme | null>
   try {
     const { title, imagePath, userId, imageHash } = params;
     
-    // Process the user ID to handle Clerk format
-    const dbUserId = processUserId(userId);
+    // Normalize the user ID for Clerk format
+    const dbUserId = normalizeClerkUserId(userId);
 
     // Check if the user exists
     const user = await getUserById(dbUserId);
@@ -200,8 +195,8 @@ export async function createMeme(params: CreateMemeParams): Promise<Meme | null>
  */
 async function updateUserUploadCount(userId: string): Promise<void> {
   try {
-    // Process the user ID to handle Clerk format
-    const dbUserId = processUserId(userId);
+    // Normalize the user ID for Clerk format
+    const dbUserId = normalizeClerkUserId(userId);
     
     // Get current counts
     const { data, error } = await supabase

@@ -11,7 +11,9 @@ if (!CLERK_PUBLISHABLE_KEY) {
   );
 }
 
-console.log("ClerkProviderWithKey mounted. Using publishable key:", CLERK_PUBLISHABLE_KEY);
+if (process.env.NODE_ENV !== 'production') {
+  console.log("ClerkProviderWithKey mounted. Using publishable key:", CLERK_PUBLISHABLE_KEY);
+}
 
 export default function ClerkProviderWithKey({ children }: { children: ReactNode }) {
   return (

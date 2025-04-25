@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { auth, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { supabaseAdmin } from './utils/supabaseAdmin';
+import { retry } from './utils/retry';
+import { normalizeClerkUserId } from './utils/clerk';
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -59,7 +61,7 @@ export async function middleware(request: NextRequest) {
     // From here on, we're handling user sync for authenticated users on routes that need it
     
     // Process the Clerk user ID to remove 'user_' prefix if it exists
-    const dbUserId = userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+    const dbUserId = normalizeClerkUserId(userId);
     
     // Check if the user already exists in Supabase
     const { data, error } = await supabaseAdmin
@@ -109,16 +111,18 @@ export async function middleware(request: NextRequest) {
     }
     
     // Create the user in Supabase
-    const { error: insertError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        id: dbUserId,
-        email: email,
-        username: username,
-        avatar_url: avatarUrl,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
+    const { error: insertError } = await retry(() =>
+      supabaseAdmin
+        .from('users')
+        .insert({
+          id: dbUserId,
+          email: email,
+          username: username,
+          avatar_url: avatarUrl,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }), 3, 500
+    );
     
     if (insertError) {
       console.error('Error creating user in Supabase:', insertError);

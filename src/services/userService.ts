@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { User } from '@/types';
 import { Database } from '@/types/supabase';
+import { normalizeClerkUserId } from '@/utils/clerk';
 
 // Initialize Supabase client with proper error handling
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -36,25 +37,6 @@ interface DbUser {
   created_at: string;
 }
 
-/**
- * Process Clerk user ID to make it compatible with Supabase UUID format
- * Handles both formats: with 'user_' prefix and without
- */
-function processUserId(userId: string): string {
-  // Log the original user ID for debugging
-  console.debug('Processing Clerk user ID:', userId);
-  
-  // Handle IDs with 'user_' prefix
-  if (userId.startsWith('user_')) {
-    const processedId = userId.replace('user_', '');
-    console.debug('Processed ID (removed prefix):', processedId);
-    return processedId;
-  }
-  
-  // If no prefix, return as is
-  console.debug('ID has no prefix, using as is:', userId);
-  return userId;
-}
 
 /**
  * Create or update a user in the database
@@ -72,9 +54,8 @@ export async function upsertUser(user: {
       return null;
     }
 
-    // Process the user ID - note: this should already be processed in the webhook handler
-    // but adding it here for safety
-    const dbUserId = processUserId(user.id);
+    // Normalize the user ID - note: this should already be processed in the webhook handler
+    const dbUserId = normalizeClerkUserId(user.id);
 
     // Use mock data in development mode
     if (useMockData) {
@@ -142,8 +123,8 @@ export async function getUserById(userId: string): Promise<User | null> {
       return null;
     }
 
-    // Process the user ID to handle Clerk format
-    const dbUserId = processUserId(userId);
+    // Normalize the user ID for Clerk format
+    const dbUserId = normalizeClerkUserId(userId);
 
     // Use mock data in development mode
     if (useMockData) {
@@ -201,8 +182,8 @@ export async function updateUserProfile(
       return null;
     }
 
-    // Process the user ID to handle Clerk format
-    const dbUserId = processUserId(userId);
+    // Normalize the user ID for Clerk format
+    const dbUserId = normalizeClerkUserId(userId);
 
     // Use mock data in development mode
     if (useMockData) {

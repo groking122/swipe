@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from './supabaseAdmin';
+import { normalizeClerkUserId } from './clerk';
 import { checkUserExists } from '@/services/serverUserService';
 
 /**
@@ -16,8 +17,10 @@ export async function ensureUserExists() {
       return { success: false, error: 'Not authenticated', userId: null };
     }
 
-    // Process the Clerk user ID to remove 'user_' prefix if it exists
-    const dbUserId = userId.startsWith('user_') ? userId.replace('user_', '') : userId;
+:start_line:17
+-------
+    // Normalize the Clerk user ID for compatibility with Supabase
+    const dbUserId = normalizeClerkUserId(userId);
     
     console.log(`Ensuring user exists in Supabase: ${dbUserId}`);
     
