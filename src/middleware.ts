@@ -35,6 +35,9 @@ const needsUserSync = createRouteMatcher([
   '/api/interactions/:path*',
 ]);
 
+// First apply the Clerk middleware
+export default clerkMiddleware();
+
 /**
  * Combined middleware that handles both authentication and user sync
  */
