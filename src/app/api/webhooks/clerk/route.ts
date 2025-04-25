@@ -5,6 +5,7 @@ import { WebhookEvent } from '@clerk/nextjs/server';
 import { upsertUser } from '@/services/userService';
 import { createClient } from '@supabase/supabase-js';
 import { retry } from '@/utils/retry';
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { normalizeClerkUserId } from '@/utils/clerk';
 
 // Initialize Supabase admin client for direct database operations
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
     'svix-signature': svix_signature,
   };
 
-  let evt: WebhookEvent;
+  let evt: any;
   try {
     const webhook = new Webhook(webhookSecret);
     evt = webhook.verify(body, svixHeaders) as WebhookEvent;
@@ -94,13 +95,15 @@ export async function POST(req: Request) {
         });
         
         // First check if user exists
-        const { data: existingUser, error: checkError } = await retry(() =>
-          supabase
+        const result = await retry(async () => {
+          const { data, error } = await supabase
             .from('users')
             .select('id')
             .eq('id', dbUserId)
-            .single(), 3, 500
-        );
+            .single();
+          return { data, error };
+        }, 3, 500);
+        const { data: existingUser, error: checkError } = result;
         
         if (checkError) {
           if (checkError.message.includes('No rows found')) {
@@ -112,8 +115,8 @@ export async function POST(req: Request) {
         
         if (existingUser) {
           // Update existing user
-          const { error: updateError } = await retry(() =>
-            supabase
+          const { error: updateError } = await retry(async () => {
+            return await supabase
               .from('users')
               .update({
                 email: primaryEmail,
@@ -121,8 +124,8 @@ export async function POST(req: Request) {
                 avatar_url: image_url,
                 updated_at: new Date().toISOString()
               })
-              .eq('id', dbUserId), 3, 500
-          );
+              .eq('id', dbUserId);
+          }, 3, 500);
           
           if (updateError) {
             console.error('Error updating user in Supabase:', updateError);
@@ -135,8 +138,8 @@ export async function POST(req: Request) {
           console.log('User updated successfully in Supabase:', dbUserId);
         } else {
           // Create new user
-          const { error: insertError } = await retry(() =>
-            supabase
+          const { error: insertError } = await retry(async () => {
+            return await supabase
               .from('users')
               .insert({
                 id: dbUserId,
@@ -145,8 +148,8 @@ export async function POST(req: Request) {
                 avatar_url: image_url,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-              }), 3, 500
-          );
+              });
+          }, 3, 500);
           
           if (insertError) {
             console.error('Error creating user in Supabase:', insertError);
@@ -155,8 +158,8 @@ export async function POST(req: Request) {
             if (insertError.message.includes('duplicate key') || insertError.message.includes('unique constraint')) {
               console.log('Duplicate key error, trying to update instead');
               
-              const { error: updateError } = await retry(() =>
-                supabase
+              const { error: updateError } = await retry(async () => {
+                return await supabase
                   .from('users')
                   .update({
                     email: primaryEmail,
@@ -164,8 +167,8 @@ export async function POST(req: Request) {
                     avatar_url: image_url,
                     updated_at: new Date().toISOString()
                   })
-                  .eq('id', dbUserId), 3, 500
-              );
+                  .eq('id', dbUserId);
+              }, 3, 500);
               
               if (updateError) {
                 console.error('Error updating user after insert failed:', updateError);
@@ -212,12 +215,12 @@ export async function POST(req: Request) {
         const dbUserId = normalizeClerkUserId(id);
         
         // Soft delete the user in Supabase
-        await retry(() =>
-          supabase
+        await retry(async () => {
+          return await supabase
             .from('users')
             .update({ deleted_at: new Date().toISOString() })
-            .eq('id', dbUserId), 3, 500
-        );
+            .eq('id', dbUserId);
+        }, 3, 500);
         
         return NextResponse.json({ success: true });
       } catch (error) {

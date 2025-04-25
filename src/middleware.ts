@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { auth, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { supabaseAdmin } from './utils/supabaseAdmin';
 import { retry } from './utils/retry';
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { normalizeClerkUserId } from './utils/clerk';
 
 // Define public routes that don't require authentication
@@ -111,8 +112,8 @@ export async function middleware(request: NextRequest) {
     }
     
     // Create the user in Supabase
-    const { error: insertError } = await retry(() =>
-      supabaseAdmin
+    const { error: insertError } = await retry<PostgrestSingleResponse<any>>(async () => {
+      return await supabaseAdmin
         .from('users')
         .insert({
           id: dbUserId,
@@ -121,8 +122,8 @@ export async function middleware(request: NextRequest) {
           avatar_url: avatarUrl,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }), 3, 500
-    );
+        });
+    }, 3, 500);
     
     if (insertError) {
       console.error('Error creating user in Supabase:', insertError);
