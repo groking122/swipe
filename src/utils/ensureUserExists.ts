@@ -17,8 +17,6 @@ export async function ensureUserExists() {
       return { success: false, error: 'Not authenticated', userId: null };
     }
 
-:start_line:17
--------
     // Normalize the Clerk user ID for compatibility with Supabase
     const dbUserId = normalizeClerkUserId(userId);
     
