@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from '@clerk/nextjs';
+import ClerkProviderWithKey from "@/providers/ClerkProviderWithKey";
 import Navigation from "@/components/Navigation";
 import AuthProvider from "@/providers/AuthProvider";
 import ToastProvider from "@/contexts/ToastContext";
@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProviderWithKey>
       <AuthProvider>
         <ToastProvider>
           <html lang="en" className="h-full">
@@ -45,6 +45,6 @@ export default function RootLayout({
           </html>
         </ToastProvider>
       </AuthProvider>
-    </ClerkProvider>
+    </ClerkProviderWithKey>
   );
 }
