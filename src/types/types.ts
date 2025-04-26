@@ -13,3 +13,13 @@ export type User = {
     dislike_count: number;
     user: User;  // ← Nested user data
   };
+
+  // src/types/supabase.ts
+export type Database = {
+  public: {
+    Tables: {
+      memes: { /* your table types */ }
+      users: { /* your table types */ }
+    }
+  }
+}
