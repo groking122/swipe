@@ -1,4 +1,13 @@
-import { supabase } from './supabaseClient'
+import { createServerClient } from '@supabase/ssr';
+
+// Create a basic server client instance
+// Note: This client won't handle cookies/auth context automatically
+// Use the client from './supabase/server' within server components/actions for that.
+const supabase = createServerClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SECRET_KEY!,
+  { cookies: {} } // Provide an empty cookies object
+);
 
 // Function to get a single meme by ID
 export async function getMemeById(id: number) {

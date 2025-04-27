@@ -32,21 +32,6 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
   const likeOpacity = useTransform(x, [0, 100], [0, 1])
   const dislikeOpacity = useTransform(x, [-100, 0], [1, 0])
 
-  // Scale and shadow effects based on swipe progress
-  const cardScale = useTransform(x, [-300, -150, 0, 150, 300], [0.9, 0.95, 1, 0.95, 0.9])
-
-  const boxShadow = useTransform(
-    x,
-    [-200, -100, 0, 100, 200],
-    [
-      "0 4px 20px rgba(255, 100, 100, 0.2)",
-      "0 4px 20px rgba(255, 100, 100, 0.1)",
-      "0 4px 20px rgba(0, 0, 0, 0.1)",
-      "0 4px 20px rgba(100, 255, 100, 0.1)",
-      "0 4px 20px rgba(100, 255, 100, 0.2)",
-    ],
-  )
-
   // Handle drag end for both mouse and touch events
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setIsSwiping(false)
@@ -95,21 +80,7 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
     }
   }, [isTop, x, y, rotate, scale])
 
-  const cardStyle = {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    borderRadius: "16px",
-    transformOrigin: "bottom center",
-    boxShadow,
-    zIndex: isTop ? 10 : 10 - index,
-    transform: isTop ? "scale(1) translateY(0)" : `scale(${0.95 - index * 0.05}) translateY(-${index * 10}px)`,
-    transition: "transform 0.3s ease",
-    scale, // Apply scale motion value
-  }
-
   // Adjust card height for desktop
-  const cardHeight = isMobile ? "100%" : "auto"
   // Use explicit vh for mobile image container height, adjust as needed
   const imageHeight = isMobile ? "65vh" : "500px"
 
@@ -117,16 +88,13 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
     <motion.div
       ref={cardRef}
       style={{
-        ...cardStyle,
         x,
-        y,
-        rotate,
-        scale: isTop ? cardScale : scale,
-        height: cardHeight,
+        rotate, // Use the useTransform value
+        scale: isTop ? scale : 1, // Apply scale effect only to top card during drag
       }}
       drag={isTop}
-      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0.7}
+      dragConstraints={isTop ? { left: 0, right: 0, top: 0, bottom: 0 } : false}
+      dragElastic={1}
       onDragStart={handleDragStart}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
