@@ -5,12 +5,13 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { ThemeToggle } from "./theme-toggle"
-import { Upload, User, Menu } from "lucide-react"
+import { Upload, User, Menu, Home } from "lucide-react"
 import { Button } from "./ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet"
 import { useMobile } from "../hooks/use-mobile"
 import { cn } from "../lib/utils"
 import { SignedIn, SignedOut, UserButton, SignInButton, SignUpButton } from "@clerk/nextjs"
+import { motion } from "framer-motion"
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -18,7 +19,7 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
 
   const navItems = [
-    { href: "/", label: "Feed", icon: <Upload className="h-5 w-5" /> },
+    { href: "/", label: "Feed", icon: <Home className="h-5 w-5" /> },
     { href: "/upload", label: "Upload", icon: <Upload className="h-5 w-5" /> },
     { href: "/account", label: "Account", icon: <User className="h-5 w-5" /> },
   ]
@@ -47,20 +48,34 @@ export default function Navigation() {
         <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white/80 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/80">
           <div className="container flex h-16 items-center justify-around px-4">
             {navItems.map((item) => {
+              const isActive = pathname === item.href;
               if (item.href === "/account") {
                 return (
                   <SignedIn key={item.href}>
                     <Link
                       href={item.href}
-                      className={cn(
-                        "flex flex-col items-center justify-center rounded-md p-2 transition-colors",
-                        pathname === item.href
-                          ? "text-rose-500"
-                          : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50",
-                      )}
+                      className="relative flex flex-col items-center justify-center rounded-md p-2 transition-colors"
                     >
-                      {item.icon}
-                      <span className="mt-1 text-xs">{item.label}</span>
+                      {isActive && (
+                        <motion.div
+                          layoutId="mobile-bubble"
+                          className="absolute inset-0 rounded-lg bg-rose-50 dark:bg-rose-950/40"
+                          style={{ borderRadius: 8 }}
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      <span className={cn(
+                          "relative flex items-center justify-center",
+                          isActive ? "text-rose-500" : "text-neutral-500 dark:text-neutral-400"
+                      )}>
+                        {item.icon}
+                      </span>
+                      <span className={cn(
+                          "relative mt-1 text-xs",
+                          isActive ? "text-rose-500" : "text-neutral-500 dark:text-neutral-400"
+                      )}>
+                        {item.label}
+                      </span>
                     </Link>
                   </SignedIn>
                 )
@@ -69,15 +84,28 @@ export default function Navigation() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={cn(
-                    "flex flex-col items-center justify-center rounded-md p-2 transition-colors",
-                    pathname === item.href
-                      ? "text-rose-500"
-                      : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50",
-                  )}
+                  className="relative flex flex-col items-center justify-center rounded-md p-2 transition-colors"
                 >
-                  {item.icon}
-                  <span className="mt-1 text-xs">{item.label}</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-bubble"
+                      className="absolute inset-0 rounded-lg bg-rose-50 dark:bg-rose-950/40"
+                      style={{ borderRadius: 8 }}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className={cn(
+                    "relative flex items-center justify-center",
+                    isActive ? "text-rose-500" : "text-neutral-500 dark:text-neutral-400"
+                  )}>
+                    {item.icon}
+                  </span>
+                  <span className={cn(
+                    "relative mt-1 text-xs",
+                    isActive ? "text-rose-500" : "text-neutral-500 dark:text-neutral-400"
+                  )}>
+                    {item.label}
+                  </span>
                 </Link>
               )
             })}
@@ -97,40 +125,64 @@ export default function Navigation() {
             <h1 className="text-xl font-bold tracking-tight">MemeSwipe</h1>
           </Link>
 
-          <nav className="hidden items-center gap-6 md:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             <SignedIn>
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2 text-sm font-medium transition-colors",
-                    pathname === item.href
-                      ? "text-rose-500"
-                      : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50",
-                  )}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="relative flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="desktop-bubble"
+                        className="absolute inset-0 rounded-lg bg-rose-50 dark:bg-rose-950/40"
+                        style={{ borderRadius: 8 }}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className={cn(
+                      "relative z-10",
+                      isActive ? "text-rose-500" : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50"
+                    )}>{item.icon}</span>
+                    <span className={cn(
+                      "relative z-10",
+                      isActive ? "text-rose-500" : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50"
+                    )}>{item.label}</span>
+                  </Link>
+                )
+              })}
             </SignedIn>
             <SignedOut>
-              {navItems.filter(item => item.href !== '/account').map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2 text-sm font-medium transition-colors",
-                    pathname === item.href
-                      ? "text-rose-500"
-                      : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50",
-                  )}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.filter(item => item.href !== '/account').map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="relative flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="desktop-bubble"
+                        className="absolute inset-0 rounded-lg bg-rose-50 dark:bg-rose-950/40"
+                        style={{ borderRadius: 8 }}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className={cn(
+                      "relative z-10",
+                      isActive ? "text-rose-500" : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50"
+                    )}>{item.icon}</span>
+                    <span className={cn(
+                      "relative z-10",
+                      isActive ? "text-rose-500" : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50"
+                    )}>{item.label}</span>
+                  </Link>
+                )
+              })}
             </SignedOut>
           </nav>
         </div>

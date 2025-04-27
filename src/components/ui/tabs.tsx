@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
-import { cn } from "../lib/utils" // Corrected path
+import { cn } from "@/lib/utils" // Changed path to use alias
 
 const Tabs = TabsPrimitive.Root
 
