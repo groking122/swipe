@@ -1,95 +1,101 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { SwipeCard } from './SwipeCard';
+// Remove Image import if not directly used here anymore
+// import Image from 'next/image';
+import SwipeCard from './SwipeCard'; // Default import for the new SwipeCard
+import { EmptyFeed } from './empty-feed'; // Import EmptyFeed
 import { handleSwipeAction } from '../app/actions';
-import type { Database } from '@/types/supabase'; // Use alias
+import type { Database } from '../types/supabase'; // Assuming path relative to src/components
+import { useToast } from "./ui/use-toast" // Import useToast
+import { useMobile } from "../hooks/use-mobile" // Import useMobile
 
 // Re-define Meme type here or import from a shared types file
 type Meme = Database['public']['Tables']['memes']['Row'];
 
 interface MemeFeedProps {
   initialMemes: Meme[];
-  initialSupabaseUrl: string; // Pass Supabase URL for image construction
+  // initialSupabaseUrl is no longer needed here
+  // initialSupabaseUrl: string;
 }
 
-export function MemeFeed({ initialMemes, initialSupabaseUrl }: MemeFeedProps) {
+export function MemeFeed({ initialMemes }: MemeFeedProps) {
   const [visibleMemes, setVisibleMemes] = useState<Meme[]>(initialMemes);
-  const [currentIndex, setCurrentIndex] = useState(0); // Index of the top card
-
-  // Function to construct the public URL (can't use server client here)
-  const getMemePublicUrl = (filename: string | null): string | null => {
-    if (!filename || !initialSupabaseUrl) return null;
-    // Construct URL manually for client component
-    return `${initialSupabaseUrl}/storage/v1/object/public/meme-images/${filename}`;
-  };
+  const { toast } = useToast(); // Initialize toast
+  const isMobile = useMobile(); // Initialize mobile hook
 
   const handleSwipe = async (memeId: string, direction: 'left' | 'right') => {
-    console.log(`[Client] Meme ${memeId} swiped ${direction}. Calling action...`);
+    const swipedMeme = visibleMemes.find(m => m.id === memeId);
+    console.log(`[Client] Meme ${memeId} (${swipedMeme?.title || 'no title'}) swiped ${direction}.`); // Improved log
+    setVisibleMemes((prevMemes) => prevMemes.filter(meme => meme.id !== memeId));
+    
+    toast({
+      title: direction === 'right' ? "Liked!" : "Noped!",
+      description: `You ${direction === 'right' ? 'liked' : 'passed on'} "${swipedMeme?.title || 'this meme'}"`, // Use title in toast
+      variant: direction === 'right' ? "default" : "destructive",
+    });
+
     try {
       const result = await handleSwipeAction(memeId, direction);
       if (result?.error) {
         console.error("[Client] Swipe action failed:", result.error);
-        // Optional: Handle error - maybe don't remove card?
+        // TODO: Consider reverting state and showing error toast
+        // setVisibleMemes(prev => [swipedMeme, ...prev.filter(m => m.id !== memeId)]); // Example revert
+        // toast({ title: "Swipe Error", description: result.error, variant: "destructive" });
       } else {
-        console.log("[Client] Swipe action successful. Removing card.");
-        // Remove the swiped meme from the visible stack
-        setVisibleMemes((prevMemes) => prevMemes.filter(meme => meme.id !== memeId));
-        // You might want to advance currentIndex here as well if needed 
-        // depending on how you implement loading more
+        console.log("[Client] Swipe action successful.");
       }
     } catch (error) {
       console.error("[Client] Error calling swipe action:", error);
-      // Optional: Handle error
+      // TODO: Consider reverting state and showing error toast
     }
   };
 
-  // Handle case where memes run out
+  // TODO: Implement fetchMoreMemes logic when stack is low
+  // useEffect(() => {
+  //   if (visibleMemes.length < 3 && visibleMemes.length > 0) { 
+  //     console.log("Would fetch more memes here");
+  //     // fetchMoreMemes(); 
+  //   }
+  // }, [visibleMemes]);
+
+  // Handle empty state
   if (!visibleMemes || visibleMemes.length === 0) {
-      return <p className="text-center text-gray-500 mt-10">No more memes for now!</p>;
+      return <EmptyFeed />; // Use EmptyFeed component
   }
 
-  // Get the top meme to render
-  const topMeme = visibleMemes[0]; 
-  const topMemeImageUrl = getMemePublicUrl(topMeme.image_url);
-
   return (
-    <div className="w-full max-w-md h-[60vh] relative"> {/* Give stack a defined height */} 
-      {/* Render only the top card for interaction */} 
-      <div
-          key={topMeme.id}
-          className={`absolute top-0 left-0 w-full h-full transition-opacity duration-300`}
-      >
-        <SwipeCard memeId={topMeme.id} onSwipe={handleSwipe}> {/* Pass callback */} 
-          <div className="relative w-full h-full bg-gray-200 rounded-lg shadow-xl overflow-hidden">
-            {topMemeImageUrl && 
-              <Image
-                src={topMemeImageUrl} 
-                alt={topMeme.id}
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority={true} // Always prioritize the top card
-              />
-            }
-            {/* Placeholder for Like/Dislike counts */}
-            <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs p-1 rounded">
-                👍 {topMeme.like_count} | 👎 {topMeme.dislike_count}
-            </div>
-          </div>
-        </SwipeCard>
-      </div>
+    // Adjust container: increase max-width to 2xl for desktop
+    <div className={`relative mx-auto ${isMobile ? "h-[70vh] w-full" : "h-[80vh] w-full max-w-2xl"} pb-24`}> 
+      {visibleMemes.map((meme, index) => {
+          // Use the image_url directly from the meme object
+          const imageUrl = meme.image_url ?? "/placeholder.svg";
 
-      {/* Optional: Render a visual representation of the next card */}
-      {visibleMemes.length > 1 && (
-        <div 
-          key={visibleMemes[1].id} 
-          className="absolute top-0 left-0 w-full h-full bg-gray-300 rounded-lg shadow-md transform scale-95 -z-10"
-        >
-          {/* You could put a placeholder or a blurred version of the next image here */}
-        </div>
-      )}
+          // Log the direct URL for debugging if needed (only for top card)
+          if (index === 0) {
+            console.log("[MemeFeed] Using image URL for top card:", imageUrl);
+          }
+
+          // Pass the meme data directly (image_url is already correct)
+          const memeForCard = { 
+            ...meme,
+            image_url: imageUrl
+            // You can add other fields if needed, e.g., title, description
+          };
+          
+          return (
+            <SwipeCard
+              key={meme.id}
+              meme={memeForCard}
+              onSwipe={handleSwipe}
+              // The first item in the *current* visibleMemes array is the top card
+              isTop={index === 0} 
+              // Index for stacking visual (0 = top)
+              index={index} 
+            />
+          );
+        })
+      }
     </div>
   );
 } 

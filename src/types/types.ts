@@ -8,6 +8,7 @@ export type User = {
   export type Meme = {
     id: string;
     image_url: string;
+    title?: string;
     created_at: string;
     like_count: number;
     dislike_count: number;
@@ -15,11 +16,4 @@ export type User = {
   };
 
   // src/types/supabase.ts
-export type Database = {
-  public: {
-    Tables: {
-      memes: { /* your table types */ }
-      users: { /* your table types */ }
-    }
-  }
-}
+// Removed Database type definition, moved to supabase.ts

@@ -75,9 +75,19 @@ export async function saveMemeData(imageUrl: string) {
 export async function handleSwipeAction(memeId: string, direction: 'left' | 'right') {
   console.log(`[Server Action] handleSwipeAction invoked for memeId: ${memeId}, direction: ${direction}`);
   
-  // Note: No direct user auth check needed here usually,
-  // as the action itself relies on the user's cookie context implicitly.
-  // RLS policies on UPDATE should handle permissions if needed.
+  let userId: string | null = null;
+  try {
+    const authResult = await auth();
+    userId = authResult.userId;
+  } catch (error) {
+    console.error("[Server Action] Error getting auth:", error);
+    return { error: "Authentication error." };
+  }
+
+  if (!userId) {
+    console.error("[Server Action] Swipe Error: User not authenticated.");
+    return { error: "User not authenticated." };
+  }
 
   if (!memeId || !direction) {
       console.error("[Server Action] Invalid input for handleSwipeAction");
@@ -94,24 +104,38 @@ export async function handleSwipeAction(memeId: string, direction: 'left' | 'rig
       return { error: "Failed to initialize database client." };
   }
 
-  const column = direction === 'right' ? 'like_count' : 'dislike_count';
+  const voteType = direction === 'right' ? 'like' : 'dislike';
 
-  // Use the increment function you created in SQL
-  const { error } = await supabase.rpc('increment', { row_id: memeId, column_name: column });
+  try {
+    console.log(`[Server Action] Calling RPC handle_vote with: memeId=${memeId}, userId=${userId}, voteType=${voteType}`);
+    
+    // Call the database function
+    const { error: rpcError } = await supabase.rpc('handle_vote', {
+        p_meme_id: memeId,    // Ensure parameter names match the SQL function
+        p_user_id: userId,
+        p_vote_type: voteType
+    });
 
-  if (error) {
-    console.error("[Server Action] Error calling increment function:", error);
-    // Check specifically for RLS errors on the rpc call if applicable
-    if (error.message.includes('security policy')) {
-        console.error("[Server Action] RLS policy violation detected during RPC call.");
+    if (rpcError) {
+      console.error("[Server Action] Error calling handle_vote RPC:", rpcError);
+      return { error: `Database RPC error: ${rpcError.message}` };
     }
-    return { error: `Database RPC error: ${error.message}` };
+
+    console.log(`[Server Action] handle_vote RPC successful for meme ${memeId}`);
+    
+    // Revalidate the path so the UI eventually shows updated counts
+    // Note: This might not update instantly due to client-side state management
+    try {
+      revalidatePath('/');
+      console.log("[Server Action] Revalidated path '/'.");
+    } catch (revalError) {
+        console.error("[Server Action] Error during revalidatePath:", revalError);
+    }
+    
+    return { success: true, message: "Vote processed." };
+
+  } catch (error) {
+    console.error("[Server Action] Unexpected error handling swipe action:", error);
+    return { error: "An unexpected error occurred." };
   }
-
-  console.log(`[Server Action] Increment successful for meme ${memeId}, column ${column}`);
-
-  // Optional: Revalidate if needed, but maybe not necessary just for count updates
-  // revalidatePath('/'); 
-
-  return { success: true };
 } 
