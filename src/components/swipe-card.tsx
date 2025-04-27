@@ -140,11 +140,11 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
       drag={isTopCard ? "x" : false}
       dragConstraints={constrained ? { left: 0, right: 0, top: 0, bottom: 0 } : false}
       dragElastic={1}
-      style={{ 
-        x, 
+      style={{
+        x,
         rotate, // Use the useTransform value
         scale: isTopCard ? scale : 1, // Apply scale effect only to top card during drag
-      }} 
+      }}
       animate={controls}
       onDrag={() => {
         if (!isTopCard) return;
