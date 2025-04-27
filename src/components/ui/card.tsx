@@ -20,6 +20,7 @@ const Card = React.forwardRef<
     />
   )
 })
+Card.displayName = "Card"
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -33,6 +34,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+CardHeader.displayName = "CardHeader"
 
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -43,6 +45,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+CardTitle.displayName = "CardTitle"
 
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -53,6 +56,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+CardDescription.displayName = "CardDescription"
 
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -66,6 +70,7 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+CardAction.displayName = "CardAction"
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -76,6 +81,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+CardContent.displayName = "CardContent"
 
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -86,6 +92,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+CardFooter.displayName = "CardFooter"
 
 export {
   Card,

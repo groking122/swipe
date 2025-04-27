@@ -17,7 +17,7 @@ export function EmptyFeed() {
       </div>
       <h3 className="text-2xl font-bold">No more memes</h3>
       <p className="text-neutral-600 dark:text-neutral-400">
-        You've swiped through all the available memes. Check back later for more!
+        You&apos;ve swiped through all the available memes. Check back later for more!
       </p>
       <div className="flex gap-4">
         <Button onClick={() => window.location.reload()}>Refresh Feed</Button>

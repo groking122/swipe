@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
-import { motion, useMotionValue, useAnimation, PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
 import { Button } from "./ui/button";
 import { Share2, ThumbsDown, ThumbsUp, User as UserIcon } from "lucide-react";
 import { Meme } from "@/types/types"; // Updated path
@@ -24,8 +24,11 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
   const x = useMotionValue(0);
   const controls = useAnimation();
   const [constrained, setConstrained] = useState(true);
-  const [direction, setDirection] = useState<"left" | "right" | null>(null);
-  const [velocity, setVelocity] = useState(0);
+
+  // Reintroduce rotate transform if needed for visual effect during drag
+  const rotate = useTransform(x, [-300, 0, 300], [-20, 0, 20]); // Adjust range/degree as needed
+  // Scale effect during drag
+  const scale = useTransform(x, [-300, -150, 0, 150, 300], [0.9, 0.95, 1, 0.95, 0.9]); 
 
   const swipeThreshold = 100;
   const swipePower = (offset: number, velocity: number) => {
@@ -94,21 +97,16 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
 
   const handleVoteClick = (decisionDirection: "left" | "right") => {
     if (!isTopCard) return;
-    setDirection(decisionDirection);
     flyAway(decisionDirection);
     onSwipe(decisionDirection); // Notify parent of the vote
   };
 
-  // Update rotation and opacity based on x position
-  const rotate = x.get() / 10; // Adjust rotation sensitivity
-  const opacity = Math.max(0, 1 - Math.abs(x.get()) / 400); // Fade out as it moves
-
-  // Dynamic background color based on swipe direction
+  // Dynamic style calculations for non-transform props
   const getBackgroundColor = () => {
     const currentX = x.get();
-    if (currentX < -swipeThreshold / 2) return "rgba(239, 68, 68, 0.1)"; // Reddish for left swipe
-    if (currentX > swipeThreshold / 2) return "rgba(34, 197, 94, 0.1)"; // Greenish for right swipe
-    return "rgba(255, 255, 255, 0)"; // Transparent otherwise
+    if (currentX < -swipeThreshold / 2) return "rgba(239, 68, 68, 0.1)"; 
+    if (currentX > swipeThreshold / 2) return "rgba(34, 197, 94, 0.1)"; 
+    return "rgba(255, 255, 255, 0)"; 
   };
 
   const getIconOpacity = (targetDirection: "left" | "right") => {
@@ -138,31 +136,28 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
   return (
     <motion.div
       ref={cardRef}
-      className={`absolute inset-0 flex cursor-grab flex-col overflow-hidden rounded-xl bg-white shadow-lg dark:bg-neutral-800 ${isTopCard ? "pointer-events-auto" : "pointer-events-none"}`}
+      className={`absolute inset-0 flex w-full h-full cursor-grab flex-col overflow-hidden rounded-xl bg-white shadow-lg origin-bottom dark:bg-neutral-800 ${isTopCard ? "pointer-events-auto" : "pointer-events-none"}`}
       drag={isTopCard ? "x" : false}
       dragConstraints={constrained ? { left: 0, right: 0, top: 0, bottom: 0 } : false}
       dragElastic={1}
-      style={{ x }}
+      style={{ 
+        x, 
+        rotate, // Use the useTransform value
+        scale: isTopCard ? scale : 1, // Apply scale effect only to top card during drag
+      }} 
       animate={controls}
       onDrag={(event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (!isTopCard) return;
-        const currentX = info.offset.x;
-        setDirection(currentX < 0 ? "left" : currentX > 0 ? "right" : null);
-        setVelocity(info.velocity.x);
-        // Trigger updates for styles dependent on x
         cardRef.current?.style.setProperty("--bg-color", getBackgroundColor());
-        cardRef.current?.style.setProperty("--rotate", `${x.get() / 10}deg`);
-        cardRef.current?.style.setProperty("--opacity-overlay", `${opacity}`)
       }}
       onDragEnd={handleDragEnd}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }} // Spring physics for return
     >
       {/* Background color overlay */}
       <motion.div
         className="absolute inset-0 z-0"
         style={{
-          backgroundColor: getBackgroundColor(),
-          transition: 'background-color 0.1s ease-out' // Smooth color transition
+          backgroundColor: "var(--bg-color, rgba(255, 255, 255, 0))",
+          transition: 'background-color 0.1s ease-out'
         }}
       />
 

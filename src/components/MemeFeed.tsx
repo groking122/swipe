@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 // Remove Image import if not directly used here anymore
 // import Image from 'next/image';
 import SwipeCard from './SwipeCard'; // Default import for the new SwipeCard

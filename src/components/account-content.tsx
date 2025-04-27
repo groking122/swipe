@@ -6,7 +6,7 @@ import Image from "next/image"
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs" 
 import { Card, CardContent } from "./ui/card"
 import { Button } from "./ui/button"
-import { Settings, Upload, Trash2, Heart, Loader2 } from "lucide-react"
+import { Upload, Trash2, Heart, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from 'next/link';
 import { useUser } from "@clerk/nextjs"; // Import useUser

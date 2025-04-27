@@ -34,7 +34,7 @@ export async function uploadMemeAction(formData: FormData): Promise<ActionResult
   }
 
   // Generate a unique file path: userId/timestamp-filename
-  const fileExtension = imageFile.name.split(".").pop();
+  // const fileExtension = imageFile.name.split(".").pop(); // Removed as unused
   const fileName = `${Date.now()}-${imageFile.name}`;
   const filePath = `${userId}/${fileName}`;
 

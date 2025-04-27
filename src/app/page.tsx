@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers'
-import Image from 'next/image'
+// import Image from 'next/image'
 // import { SwipeCard } from '@/components/SwipeCard'
 import { auth, clerkClient } from '@clerk/nextjs/server'
+// import type { User as ClerkUser } from '@clerk/nextjs/api';
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/supabase'
 // import { UploadButton } from '@/components/UploadButton'
@@ -29,7 +30,8 @@ export default async function Home() {
   console.log('[Page] Rendering Home page...'); // Log page render start
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
-  const { userId: currentUserId } = await auth(); // Rename to avoid conflict
+  // const { userId: currentUserId } = await auth(); // Removed unused variable
+  await auth(); // Call auth() if needed for its side effects/checks, but don't assign
 
   console.log('[Page] Fetching initial memes from Supabase...'); // Log fetch start
   // Fetch initial memes
@@ -51,10 +53,9 @@ export default async function Home() {
   if (memesData && memesData.length > 0) {
     console.log(`[Page] Fetched ${memesData.length} memes. Fetching author details...`);
     
-    // Get unique user IDs from memes
     const userIds = [...new Set(memesData.map(meme => meme.user_id).filter(Boolean) as string[])];
-
-    let authorMap: Map<string, string | null> = new Map();
+    // Use const for authorMap as it's not reassigned
+    const authorMap: Map<string, string | null> = new Map(); 
 
     if (userIds.length > 0) {
       try {
