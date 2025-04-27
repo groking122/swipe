@@ -40,6 +40,14 @@ export default function Navigation() {
               <SignedIn>
                 <UserButton afterSignOutUrl="/" />
               </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button variant="ghost" size="sm">Sign In</Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button size="sm">Sign Up</Button>
+                </SignUpButton>
+              </SignedOut>
             </div>
           </div>
         </header>

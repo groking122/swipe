@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-        <body className="pb-16 md:pb-0">
+        <body className="flex flex-col min-h-screen">
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -38,7 +38,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <Navigation />
-            <main className="container mx-auto p-4 pt-4 md:pt-8">
+            <main className="flex-grow container mx-auto px-4 pt-4 md:pt-8">
             {children}
           </main>
             <Toaster />

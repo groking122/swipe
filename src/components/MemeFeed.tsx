@@ -65,8 +65,8 @@ export function MemeFeed({ initialMemes }: MemeFeedProps) {
   }
 
   return (
-    // Adjust container: reduce bottom padding on mobile
-    <div className={`relative mx-auto ${isMobile ? "h-[70vh] w-full" : "h-[80vh] w-full max-w-2xl"} pb-12 md:pb-24`}> 
+    // Adjust container: remove bottom padding
+    <div className={`relative mx-auto ${isMobile ? "h-[70vh] w-full" : "h-[80vh] w-full max-w-2xl"} pt-3 md:pb-24`}> 
       {visibleMemes.map((meme, index) => {
           // Use the image_url directly from the meme object
           const imageUrl = meme.image_url ?? "/placeholder.svg";
