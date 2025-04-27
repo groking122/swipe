@@ -22,33 +22,8 @@ interface AccountContentProps {
   contentType: "uploads" | "liked";
 }
 
-// Mock data for uploaded memes (Keep for now)
-const mockUploadedMemes = [
-  {
-    id: "u1",
-    imageUrl: "/distracted-boyfriend-generic.png",
-    title: "My First Meme",
-    likes: 42,
-    dislikes: 5,
-    dateUploaded: "2023-04-15",
-  },
-  {
-    id: "u2",
-    imageUrl: "/surprised-cat-calculator.png",
-    title: "Math Problems",
-    likes: 78,
-    dislikes: 3,
-    dateUploaded: "2023-05-22",
-  },
-  {
-    id: "u3",
-    imageUrl: "/surprised-cat-computer.png",
-    title: "Coding Be Like",
-    likes: 103,
-    dislikes: 12,
-    dateUploaded: "2023-06-10",
-  },
-]
+// Remove unused mock data
+// const mockUploadedMemes = [ ... ];
 
 const container = {
   hidden: { opacity: 0 },

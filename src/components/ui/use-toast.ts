@@ -11,7 +11,7 @@ import type {
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = ToastProps & {
+export type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
@@ -32,23 +32,23 @@ function genId() {
   return count.toString()
 }
 
-type ActionType = typeof actionTypes
+type ActionTypes = typeof actionTypes
 
 type Action =
   | {
-      type: ActionType["ADD_TOAST"]
+      type: ActionTypes["ADD_TOAST"]
       toast: ToasterToast
     }
   | {
-      type: ActionType["UPDATE_TOAST"]
+      type: ActionTypes["UPDATE_TOAST"]
       toast: Partial<ToasterToast>
     }
   | {
-      type: ActionType["DISMISS_TOAST"]
+      type: ActionTypes["DISMISS_TOAST"]
       toastId?: ToasterToast["id"]
     }
   | {
-      type: ActionType["REMOVE_TOAST"]
+      type: ActionTypes["REMOVE_TOAST"]
       toastId?: ToasterToast["id"]
     }
 

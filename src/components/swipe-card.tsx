@@ -146,7 +146,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
         scale: isTopCard ? scale : 1, // Apply scale effect only to top card during drag
       }} 
       animate={controls}
-      onDrag={(event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      onDrag={(_event: MouseEvent | TouchEvent | PointerEvent, _info: PanInfo) => {
         if (!isTopCard) return;
         cardRef.current?.style.setProperty("--bg-color", getBackgroundColor());
       }}
