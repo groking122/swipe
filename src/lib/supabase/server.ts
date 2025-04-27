@@ -34,24 +34,3 @@ export function createClient(cookieStore: ReadonlyRequestCookies) {
 }
 
 // REMOVE the top-level try...catch blocks entirely
-/*
-try {
-  // console.log('server: GET supabase session')
-  const { data: { session }, error: _error } = await supabase.auth.getSession() // Prefixed error
-  // console.log('server: RETURN supabase session', session)
-  return session
-} catch (error) {
-  console.error('Error getting session:', error)
-  return null
-}
-
-try {
-  // console.log('server: GET supabase user')
-  const { data: { user }, error: _error } = await supabase.auth.getUser() // Prefixed error
-  // console.log('server: RETURN supabase user', user)
-  return user
-} catch (error) {
-  console.error('Error getting user:', error)
-  return null
-} 
-*/ 
