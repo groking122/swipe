@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+supabase
+pillow
+imagehash
+requests
+python-dotenv
+gunicorn 
