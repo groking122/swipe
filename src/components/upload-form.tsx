@@ -24,7 +24,7 @@ export default function UploadForm() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // State for modal
   const { toast } = useToast()
   const router = useRouter()
-  const { user, isLoaded, isSignedIn } = useUser(); // Get user status
+  const { isLoaded, isSignedIn } = useUser(); // Get user status
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

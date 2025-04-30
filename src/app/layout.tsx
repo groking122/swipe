@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-// src/app/layout.tsx
 import { ClerkProvider } from '@clerk/nextjs'
-import Navigation from "../components/navigation";
 import { ThemeProvider } from "../components/theme-provider";
-import { Toaster } from "../components/ui/toaster";
+import { LayoutClient } from "@/components/layout-client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,18 +28,14 @@ export default function RootLayout({
   return (
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-        <body className="flex flex-col min-h-screen">
+        <body>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
-            <Navigation />
-            <main className="flex-grow container mx-auto px-4 pt-4 md:pt-8">
-            {children}
-          </main>
-            <Toaster />
+             <LayoutClient>{children}</LayoutClient>
           </ThemeProvider>
         </body>
       </html>

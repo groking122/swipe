@@ -6,7 +6,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger, // We might not use DialogTrigger directly if opened programmatically
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { SignInButton, SignUpButton } from "@clerk/nextjs"

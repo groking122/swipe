@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { ThemeToggle } from "./theme-toggle"
-import { Upload, User, Menu, Home } from "lucide-react"
+import { Upload, User, Menu, Home, Search } from "lucide-react"
 import { Button } from "./ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet"
 import { useMobile } from "../hooks/use-mobile"
@@ -37,6 +37,10 @@ export default function Navigation() {
             </Link>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Search className="h-5 w-5" />
+                <span className="sr-only">Search</span>
+              </Button>
               <SignedIn>
                 <UserButton afterSignOutUrl="/" />
               </SignedIn>

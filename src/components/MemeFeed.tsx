@@ -25,7 +25,7 @@ export function MemeFeed({ initialMemes }: MemeFeedProps) {
   const [visibleMemes, setVisibleMemes] = useState<Meme[]>(initialMemes);
   const { toast } = useToast(); // Initialize toast
   const isMobile = useMobile(); // Initialize mobile hook
-  const { user, isLoaded, isSignedIn } = useUser(); // Get user status
+  const { isLoaded, isSignedIn } = useUser(); // Get user status
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // State for modal
 
   const handleSwipe = async (memeId: string, direction: 'left' | 'right') => {
