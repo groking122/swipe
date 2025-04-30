@@ -14,7 +14,6 @@ export default function AdBanner() {
   // Use a brand color consistent with the target project, assuming 'rose' from previous edits
   const brandGradient = "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
   const brandText = "text-rose-500"
-  const brandBgLight = "bg-rose-50"
   const brandDarkBg = "dark:from-rose-950/40"
 
   return (

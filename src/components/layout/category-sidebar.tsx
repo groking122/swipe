@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname, useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -43,7 +43,6 @@ const categories = [
 
 export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
   // Use a default category if none is selected, adjust 'trending' if needed
   const currentCategory = searchParams?.get("category") || "trending" 
