@@ -5,7 +5,12 @@ import { Button } from "./ui/button" // Corrected path
 import { useMobile } from "../hooks/use-mobile" // Corrected relative path
 import Link from 'next/link'
 
-export function EmptyFeed() {
+// Define props interface
+interface EmptyFeedProps {
+  onRefresh: () => void; // Function to call when refresh is clicked
+}
+
+export function EmptyFeed({ onRefresh }: EmptyFeedProps) {
   const isMobile = useMobile()
 
   return (
@@ -20,7 +25,7 @@ export function EmptyFeed() {
         You&apos;ve swiped through all the available memes. Check back later for more!
       </p>
       <div className="flex gap-4">
-        <Button onClick={() => window.location.reload()}>Refresh Feed</Button>
+        <Button onClick={onRefresh}>Refresh Feed</Button>
         <Button variant="outline" asChild>
           <Link href="/upload">Upload a Meme</Link>
         </Button>

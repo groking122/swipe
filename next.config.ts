@@ -3,16 +3,23 @@ import type { NextConfig } from "next";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: 'vfoeohzevoiaudcahmkk.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
-  // Remove the experimental.serverActions line
-  // Server Actions are enabled by default in Next.js 15+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+      allowedOrigins: ['localhost:3000', 'localhost:3001']
+    }
+  },
 }
 
-module.exports = nextConfig
+export default nextConfig
