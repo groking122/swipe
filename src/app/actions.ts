@@ -104,6 +104,33 @@ export async function handleSwipeAction(memeId: string, direction: 'left' | 'rig
       return { error: "Failed to initialize database client." };
   }
 
+  // --- START: Fetch cluster_id --- 
+  let clusterId: string | null = null;
+  try {
+    console.log(`[Server Action] Fetching cluster_id for meme ${memeId}`);
+    const { data: memeData, error: fetchError } = await supabase
+      .from('memes')
+      .select('cluster_id') // Only select the cluster_id
+      .eq('id', memeId)
+      .maybeSingle(); // Use maybeSingle() in case meme is somehow deleted
+
+    if (fetchError) {
+        console.error(`[Server Action] Error fetching meme ${memeId} data:`, fetchError);
+        // Decide if you want to stop the whole action or just proceed without cluster_id
+        // For now, let's proceed but log the error
+    } else if (memeData?.cluster_id) {
+        clusterId = memeData.cluster_id;
+        console.log(`[Server Action] Found cluster_id: ${clusterId}`);
+    } else {
+        console.warn(`[Server Action] Meme ${memeId} found, but cluster_id is missing or null.`);
+        // clusterId remains null
+    }
+  } catch (fetchCatchError) {
+      console.error("[Server Action] Unexpected error fetching meme data:", fetchCatchError);
+      // Proceed without clusterId if fetch fails unexpectedly
+  }
+  // --- END: Fetch cluster_id --- 
+
   // --- Update user_likes table --- 
   if (direction === 'right') {
       // Add like
@@ -142,14 +169,18 @@ export async function handleSwipeAction(memeId: string, direction: 'left' | 'rig
   const voteType = direction === 'right' ? 'like' : 'dislike';
 
   try {
-    console.log(`[Server Action] Calling RPC handle_vote with: memeId=${memeId}, userId=${userId}, voteType=${voteType}`);
+    console.log(`[Server Action] Calling RPC handle_vote with: memeId=${memeId}, userId=${userId}, voteType=${voteType}, clusterId=${clusterId}`); // Updated log
     
-    // Call the database function (Keep this if it handles like/dislike counts)
-    const { error: rpcError } = await supabase.rpc('handle_vote', {
+    // Prepare parameters for RPC call, including cluster_id
+    const rpcParams = {
         p_meme_id: memeId,
         p_user_id: userId,
-        p_vote_type: voteType
-    });
+        p_vote_type: voteType,
+        p_cluster_id: clusterId // Pass the fetched clusterId (can be null)
+    };
+
+    // Call the database function with updated parameters
+    const { error: rpcError } = await supabase.rpc('handle_vote', rpcParams);
 
     if (rpcError) {
       console.error("[Server Action] Error calling handle_vote RPC:", rpcError);

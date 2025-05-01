@@ -38,6 +38,9 @@ export async function uploadMemeAction(formData: FormData): Promise<ActionResult
   const fileName = `${Date.now()}-${imageFile.name}`;
   const filePath = `${userId}/${fileName}`;
 
+  let imageUrl: string | null = null; // Define imageUrl variable
+  let p_hash: string | null = null; // Define p_hash variable
+
   try {
     // 1. Upload image to Supabase Storage
     console.log(`[Action] Uploading image to storage: ${filePath}`);
@@ -56,12 +59,45 @@ export async function uploadMemeAction(formData: FormData): Promise<ActionResult
       .from("memes")
       .getPublicUrl(filePath);
     
-    const imageUrl = urlData?.publicUrl;
+    imageUrl = urlData?.publicUrl; // Assign to outer variable
     if (!imageUrl) {
       console.error("[Action] Failed to get public URL for:", filePath);
       throw new Error("Failed to get image public URL after upload.");
     }
     console.log(`[Action] Public URL: ${imageUrl}`);
+
+    // --- START: Call FastAPI to generate hash ---
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+    if (!backendUrl) {
+        console.error("[Action] NEXT_PUBLIC_BACKEND_API_URL is not set. Cannot generate hash.");
+        // Decide how to proceed: throw error or continue without hash?
+        // throw new Error("Backend URL configuration is missing."); 
+        p_hash = null; // Continue without hash for now
+    } else {
+        try {
+            console.log(`[Action] Calling FastAPI hash endpoint: ${backendUrl}/generate-phash`);
+            const hashResponse = await fetch(`${backendUrl}/generate-phash`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ image_url: imageUrl })
+            });
+            
+            if (!hashResponse.ok) {
+                const errorText = await hashResponse.text();
+                throw new Error(`Failed to generate phash (${hashResponse.status}): ${errorText}`);
+            }
+            
+            const hashData = await hashResponse.json();
+            p_hash = hashData.phash; // Assign to outer variable
+            console.log(`[Action] Generated perceptual hash: ${p_hash}`);
+
+        } catch (hashError) {
+            console.error("[Action] Failed to generate perceptual hash via FastAPI:", hashError);
+            // Continue without hash if FastAPI call fails
+            p_hash = null;
+        }
+    }
+    // --- END: Call FastAPI to generate hash ---
 
     // 3. Insert meme data into Supabase Database
     console.log("[Action] Inserting meme data into database...");
@@ -70,7 +106,8 @@ export async function uploadMemeAction(formData: FormData): Promise<ActionResult
       title: title,
       description: description, // Can be null
       image_url: imageUrl, // Store the public URL
-      // 'created_at' and 'id' are usually handled by Supabase defaults
+      perceptual_hash: p_hash, // Use the generated hash (can be null)
+      cluster_id: p_hash       // Use the generated hash (can be null)
     };
 
     const { error: dbError } = await supabase.from("memes").insert(memeData);
@@ -91,6 +128,15 @@ export async function uploadMemeAction(formData: FormData): Promise<ActionResult
 
   } catch (error) {
     console.error("[Action] Upload Meme Action Failed:", error);
+    // Attempt cleanup if URL was generated but something else failed
+    if (imageUrl) {
+        try {
+             console.log(`[Action] Cleaning up storage due to error: ${filePath}`);
+             await supabase.storage.from("memes").remove([filePath]);
+        } catch (cleanupError) {
+            console.error("[Action] Error during cleanup of storage:", cleanupError);
+        }
+    }
     return { error: error instanceof Error ? error.message : "An unknown error occurred during upload." };
   }
 }
