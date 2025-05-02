@@ -39,7 +39,8 @@ export default async function Home() {
   // Supabase URL is not needed here
 
   return (
-    <div className="flex flex-col items-center w-full h-full">
+    // Simplify wrapper: remove flex items-center, let MemeFeed handle centering
+    <div className="w-full h-full">
       {/* Removed conditional UploadButton block */}
 
       {/* Render the Client Component for the feed */}

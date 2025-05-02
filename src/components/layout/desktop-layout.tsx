@@ -10,13 +10,13 @@ import { cn } from "@/lib/utils"
 
 interface DesktopLayoutProps {
   children: React.ReactNode
+  sidebarOpen: boolean
+  onToggleSidebar: () => void
 }
 
-export default function DesktopLayout({ children }: DesktopLayoutProps) {
+export default function DesktopLayout({ children, sidebarOpen, onToggleSidebar }: DesktopLayoutProps) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
-  // Default sidebar state can be true or based on preference/storage
-  const [sidebarOpen, setSidebarOpen] = useState(true) 
   const [adHeight, setAdHeight] = useState(0)
   const adRef = useRef<HTMLDivElement>(null)
 
@@ -92,34 +92,42 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
         {/* Category sidebar - shown conditionally */}
         {showCategorySidebar && (
           <div
-            // Apply dynamic top and height based on adHeight for non-lg screens
-            // Make it sticky below the header (top-16) on lg screens
+            // Apply dynamic top and height based on adHeight
+            // ALWAYS use sticky positioning
             className={cn(
-              "fixed left-0 z-30 transform border-r border-neutral-200 bg-white transition-all duration-300 ease-in-out dark:border-neutral-800 dark:bg-neutral-900",
-              // Dynamic top/height based on ad banner for fixed positioning (non-lg)
-              "top-[calc(4rem+var(--ad-height))] h-[calc(100vh-4rem-var(--ad-height))]",
-              // Sticky positioning below header for lg screens
-              "lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)]",
-              // Width and translation adjustments:
+              // Base sticky/transform/border/bg styles
+              "sticky z-30 transform border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900",
+              // Restore specific transitions 
+              "transition-[width,transform] duration-300 ease-in-out",
+              // Conditional top offset
+              "top-[calc(4rem+var(--ad-height))] lg:top-16", 
+              // Height adjustments
+              "h-[calc(100vh-4rem-var(--ad-height))] lg:h-[calc(100vh-4rem)]", 
+              // Width and translation adjustments
               sidebarOpen
                 ? "w-64 translate-x-0" // Open state
-                : "w-64 -translate-x-full lg:w-16 lg:translate-x-0" // Closed state: translate below lg, shrink+stay at lg
+                : "w-64 -translate-x-full lg:w-16 lg:translate-x-0" // Closed state
             )}
           >
-            <CategorySidebar onToggle={() => setSidebarOpen(!sidebarOpen)} isOpen={sidebarOpen} adHeight={adHeight} />
+            <CategorySidebar onToggle={onToggleSidebar} isOpen={sidebarOpen} adHeight={adHeight} />
           </div>
         )}
 
         {/* Main content area */}
         <main className={cn(
-            "flex flex-1 flex-col transition-all duration-300 ease-in-out", 
-            // Adjust margin based on sidebar visibility AND state only on lg+
-            // Use ml-64 when open, ml-16 when closed (and shown), ml-0 otherwise
-            showCategorySidebar ? (sidebarOpen ? "lg:ml-64" : "lg:ml-16") : "lg:ml-0" 
-            )}>
+            // Base flex styles
+            "flex flex-1 flex-col w-full",
+            // Restore specific transition for margin
+            "transition-[margin-left] duration-300 ease-in-out", 
+            // Margin logic ONLY applies above lg breakpoint
+            showCategorySidebar
+              ? (sidebarOpen ? "lg:ml-64" : "lg:ml-16") // Use prop
+              : "lg:ml-0" // No sidebar shown
+          )}>
           {/* Page content and Ad Sidebar wrapper */}
           <div className="flex flex-1">
-            {/* Actual page content gets padding */}
+            {/* Actual page content gets padding (remove if MemeFeed container handles it) */}
+            {/* Let MemeFeed use mx-auto within this space */}
             <div className="flex-1 px-4 py-6">{children}</div>
 
             {/* Right sidebar for ads - shown conditionally */}

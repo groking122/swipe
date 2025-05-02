@@ -11,6 +11,7 @@ import { useToast } from "./ui/use-toast" // Import useToast
 import { useMobile } from "../hooks/use-mobile" // Import useMobile
 import { useUser } from '@clerk/nextjs'; // Import useUser
 import { LoginRequiredModal } from './login-required-modal'; // Import the modal
+import { cn } from '../lib/utils';
 
 // Re-define Meme type here or import from a shared types file
 type Meme = Database['public']['Tables']['memes']['Row'];
@@ -177,8 +178,13 @@ export function MemeFeed() { // Fetching all client-side
   return (
     <>
      {/* Optional: Add a more subtle loading indicator for re-fetches */}
-     {/* {isLoading && visibleMemes.length > 0 && <div className="absolute top-2 left-2 z-50"><Spinner/></div>} */}
-      <div className={`relative mx-auto ${isMobile ? "h-[70vh] w-full" : "h-[80vh] w-full max-w-2xl"} pt-3 md:pb-24`}>
+     {/* {isLoading && visibleMemes.length > 0 && <div className=\"absolute top-2 left-2 z-50\"><Spinner/></div>} */}
+      <div className={cn(
+        "relative mx-auto pt-3 md:pb-24", // Added mx-auto back
+        isMobile 
+          ? "h-[70vh] w-full" 
+          : "h-[80vh] max-w-2xl" // Keep max-w-2xl for desktop width limit
+      )}>
         {visibleMemes.map((meme, index) => {
             const imageUrl = meme.image_url ?? "/placeholder.svg";
             const memeForCard = { ...meme, image_url: imageUrl };

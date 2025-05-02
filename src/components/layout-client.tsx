@@ -10,10 +10,16 @@ import { Toaster } from "./ui/toaster";
 export function LayoutClient({ children }: { children: React.ReactNode }) {
   const isMobile = useMobile();
   const [mounted, setMounted] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Handler to toggle sidebar state
+  const handleToggleSidebar = () => {
+    setSidebarOpen((prev) => !prev);
+  };
 
   // Avoid layout shifts during hydration by rendering a minimal structure
   // that matches the final layout's elements (like Navigation)
@@ -34,7 +40,12 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       {isMobile ? (
         <main className="flex-1 pb-16 md:pb-0">{children}</main>
       ) : (
-        <DesktopLayout>{children}</DesktopLayout>
+        <DesktopLayout 
+          sidebarOpen={sidebarOpen} 
+          onToggleSidebar={handleToggleSidebar}
+        >
+          {children}
+        </DesktopLayout>
       )}
       <Toaster />
     </div>
