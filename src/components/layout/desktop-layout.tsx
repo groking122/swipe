@@ -1,12 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import CategorySidebar from "@/components/layout/category-sidebar"
 import AdBanner from "@/components/ads/ad-banner"
 import AdSidebar from "@/components/ads/ad-sidebar"
-import SearchBar from "@/components/search/search-bar" // Corrected import path
 import { cn } from "@/lib/utils"
 
 interface DesktopLayoutProps {
@@ -18,6 +17,8 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
   const [mounted, setMounted] = useState(false)
   // Default sidebar state can be true or based on preference/storage
   const [sidebarOpen, setSidebarOpen] = useState(true) 
+  const [adHeight, setAdHeight] = useState(0)
+  const adRef = useRef<HTMLDivElement>(null)
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -38,13 +39,34 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
 
   // Determine if the sidebar and ads should be shown based on the current path
   const isFeedPage = pathname === "/"
-  // Add other pages where you might want the layout, e.g., category pages
   const showFullLayout = isFeedPage // || pathname?.startsWith("/category/")
   
-  // Don't show category sidebar on upload and account pages (or any non-feed page for now)
   const showCategorySidebar = showFullLayout;
   const showAds = showFullLayout;
-  const showSearchBar = showFullLayout;
+
+  // Measure ad height - Moved this section down
+  useEffect(() => {
+    if (adRef.current && showAds) {
+      const updateAdHeight = () => {
+        const height = adRef.current?.offsetHeight || 0
+        setAdHeight(height)
+      }
+      updateAdHeight()
+      const resizeObserver = new ResizeObserver(updateAdHeight)
+      resizeObserver.observe(adRef.current)
+      return () => {
+        // Check if adRef.current exists before potentially accessing it
+        const currentAdRef = adRef.current;
+        if (currentAdRef) { 
+          resizeObserver.unobserve(currentAdRef)
+        }
+      }
+    } else {
+       // Reset ad height if ads are not shown or ref is not available
+       setAdHeight(0);
+    }
+    // Ensure dependencies are correct
+  }, [mounted, showAds, pathname]) // Rerun if mounted status, showAds, or path changes
 
   if (!mounted) {
      // Return a basic structure or null during SSR/hydration phase
@@ -53,10 +75,13 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col" style={{ "--ad-height": `${adHeight}px` } as React.CSSProperties}>
       {/* Top ad banner - only on pages where showAds is true */}
       {showAds && (
-        <div className="w-full border-b border-neutral-200 bg-white px-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <div
+          ref={adRef}
+          className="w-full border-b border-neutral-200 bg-white px-4 dark:border-neutral-800 dark:bg-neutral-900"
+        >
           <div className="mx-auto max-w-7xl">
             <AdBanner />
           </div>
@@ -67,13 +92,21 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
         {/* Category sidebar - shown conditionally */}
         {showCategorySidebar && (
           <div
-            // Note: Adjust breakpoints (lg:) if needed based on your design
+            // Apply dynamic top and height based on adHeight for non-lg screens
+            // Make it sticky below the header (top-16) on lg screens
             className={cn(
-              "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-64 transform border-r border-neutral-200 bg-white transition-transform duration-300 ease-in-out dark:border-neutral-800 dark:bg-neutral-900 lg:sticky lg:top-16 lg:translate-x-0", // Changed lg:relative to lg:sticky
-              sidebarOpen ? "translate-x-0" : "-translate-x-full lg:-translate-x-full", // Ensure it translates off-screen correctly on lg
+              "fixed left-0 z-30 transform border-r border-neutral-200 bg-white transition-all duration-300 ease-in-out dark:border-neutral-800 dark:bg-neutral-900",
+              // Dynamic top/height based on ad banner for fixed positioning (non-lg)
+              "top-[calc(4rem+var(--ad-height))] h-[calc(100vh-4rem-var(--ad-height))]",
+              // Sticky positioning below header for lg screens
+              "lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)]",
+              // Width and translation adjustments:
+              sidebarOpen
+                ? "w-64 translate-x-0" // Open state
+                : "w-64 -translate-x-full lg:w-16 lg:translate-x-0" // Closed state: translate below lg, shrink+stay at lg
             )}
           >
-            <CategorySidebar onToggle={() => setSidebarOpen(!sidebarOpen)} isOpen={sidebarOpen} />
+            <CategorySidebar onToggle={() => setSidebarOpen(!sidebarOpen)} isOpen={sidebarOpen} adHeight={adHeight} />
           </div>
         )}
 
@@ -81,18 +114,9 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
         <main className={cn(
             "flex flex-1 flex-col transition-all duration-300 ease-in-out", 
             // Adjust margin based on sidebar visibility AND state only on lg+
-            showCategorySidebar ? (sidebarOpen ? "lg:ml-64" : "lg:ml-0") : "lg:ml-0" 
+            // Use ml-64 when open, ml-16 when closed (and shown), ml-0 otherwise
+            showCategorySidebar ? (sidebarOpen ? "lg:ml-64" : "lg:ml-16") : "lg:ml-0" 
             )}>
-          {/* Search bar - shown conditionally */}
-          {showSearchBar && (
-            <div className="sticky top-16 z-20 border-b border-neutral-200 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/80">
-              {/* Center search bar within its container */}
-              <div className="mx-auto max-w-2xl">
-                 <SearchBar />
-              </div>
-            </div>
-          )}
-
           {/* Page content and Ad Sidebar wrapper */}
           <div className="flex flex-1">
             {/* Actual page content gets padding */}
