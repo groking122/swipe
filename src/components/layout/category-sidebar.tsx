@@ -28,7 +28,6 @@ import { motion } from "framer-motion"
 interface CategorySidebarProps {
   onToggle: () => void
   isOpen: boolean
-  adHeight?: number
 }
 
 // Define categories with icons
@@ -45,7 +44,7 @@ const categories = [
   { id: "anime", name: "Anime & Manga", icon: <BookOpen className="h-4 w-4" /> },
 ]
 
-export default function CategorySidebar({ onToggle, isOpen, adHeight = 0 }: CategorySidebarProps) {
+export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()

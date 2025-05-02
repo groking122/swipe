@@ -3,7 +3,6 @@
 import { RefreshCw, Upload, LogIn } from "lucide-react"
 import { Button } from "./ui/button" // Corrected path
 import { useMobile } from "../hooks/use-mobile" // Corrected relative path
-import Link from 'next/link'
 import { SignInButton } from "@clerk/nextjs" // Added SignInButton import
 
 // Define props interface

@@ -53,10 +53,10 @@ export default function DesktopLayout({ children, sidebarOpen, onToggleSidebar }
       }
       updateAdHeight()
       const resizeObserver = new ResizeObserver(updateAdHeight)
-      resizeObserver.observe(adRef.current)
+      const currentAdRef = adRef.current; // Capture ref value
+      resizeObserver.observe(currentAdRef)
       return () => {
-        // Check if adRef.current exists before potentially accessing it
-        const currentAdRef = adRef.current;
+        // Use the captured value in the cleanup
         if (currentAdRef) { 
           resizeObserver.unobserve(currentAdRef)
         }
@@ -109,31 +109,37 @@ export default function DesktopLayout({ children, sidebarOpen, onToggleSidebar }
                 : "w-64 -translate-x-full lg:w-16 lg:translate-x-0" // Closed state
             )}
           >
-            <CategorySidebar onToggle={onToggleSidebar} isOpen={sidebarOpen} adHeight={adHeight} />
+            <CategorySidebar onToggle={onToggleSidebar} isOpen={sidebarOpen} />
           </div>
         )}
 
         {/* Main content area */}
         <main className={cn(
-            // Base flex styles
-            "flex flex-1 flex-col w-full",
-            // Specific transition for margin with ease-out
-            "transition-[margin-left] duration-300 ease-out",
-            // Margin logic ONLY applies above lg breakpoint
-            showCategorySidebar
-              ? (sidebarOpen ? "lg:ml-64" : "lg:ml-16") // Use prop
-              : "lg:ml-0" // No sidebar shown
+            // Base flex styles, ensure it allows shrinking
+            "flex-1 flex flex-col min-w-0",
+            // REMOVE transition for margin
           )}>
           {/* Page content and Ad Sidebar wrapper */}
-          <div className="flex flex-1">
-            {/* Actual page content gets padding (remove if MemeFeed container handles it) */}
-            {/* Let MemeFeed use mx-auto within this space */}
-            <div className="flex-1 px-4 py-6">{children}</div>
+          <div className="flex flex-1 min-w-0"> 
+            {/* This div holds the main page content (children) */}
+            {/* It applies padding to create the central column */}
+            <div className={cn(
+                "flex-1 py-6 w-full min-w-0", 
+                "transition-[padding] duration-300 ease-out",
+                "px-4", // Base mobile padding
+                // Tablet (lg to xl) padding
+                showCategorySidebar && (sidebarOpen ? "lg:pl-64 lg:pr-4" : "lg:pl-16 lg:pr-4"),
+                // Desktop (xl+) padding (overrides lg padding)
+                showAds && showCategorySidebar && (sidebarOpen ? "xl:pl-64 xl:pr-80" : "xl:pl-16 xl:pr-80"),
+                // Case: No left sidebar but ads shown (xl+)
+                !showCategorySidebar && showAds && "xl:pr-80"
+              )}>
+              {children}
+            </div>
 
-            {/* Right sidebar for ads - shown conditionally */}
+            {/* Right sidebar for ads */}
             {showAds && (
-              // Note: Adjust breakpoints (xl:) if needed
-              <div className="sticky top-16 hidden h-[calc(100vh-4rem)] w-80 overflow-y-auto border-l border-neutral-200 px-4 py-6 dark:border-neutral-800 xl:block">
+              <div className="sticky top-16 hidden h-[calc(100vh-4rem)] w-80 flex-shrink-0 overflow-y-auto border-l border-neutral-200 px-4 py-6 dark:border-neutral-800 xl:block">
                 <AdSidebar />
               </div>
             )}

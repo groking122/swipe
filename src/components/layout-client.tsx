@@ -62,18 +62,20 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
   // Render the actual layout based on mobile/desktop state
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50 dark:bg-neutral-900">
-      {/* Navigation might need props later if it also has a toggle */}
       <Navigation />
-      {isMobile ? (
-        <main className="flex-1 pb-16 md:pb-0">{children}</main>
-      ) : (
-        <DesktopLayout 
-          sidebarOpen={sidebarOpen} 
-          onToggleSidebar={handleToggleSidebar}
-        >
-          {children}
-        </DesktopLayout>
-      )}
+      {/* Wrap main content/desktop layout in a div to control stacking context */}
+      <div className="relative z-10 flex-1 flex flex-col">
+        {isMobile ? (
+          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        ) : (
+          <DesktopLayout 
+            sidebarOpen={sidebarOpen} 
+            onToggleSidebar={handleToggleSidebar}
+          >
+            {children}
+          </DesktopLayout>
+        )}
+      </div>
       <Toaster />
     </div>
   );

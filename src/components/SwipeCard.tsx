@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { motion, useMotionValue, useTransform, type PanInfo, animate } from "framer-motion"
-import { Heart, X, ThumbsUp, ThumbsDown, User, MessageSquare } from "lucide-react"
+import { Heart, X, ThumbsUp, ThumbsDown, User } from "lucide-react"
 import { useMobile } from "../hooks/use-mobile" // Corrected path
 import type { Database } from "../types/supabase"; // Assuming path relative to src/components
 import { cn } from "../lib/utils"
@@ -107,7 +107,8 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
   return (
     <motion.div
       ref={cardRef}
-      style={cardStyle}
+      // --- RESTORED STYLES AND PROPS --- 
+      style={cardStyle} 
       drag={isTop}
       dragConstraints={isTop ? { left: 0, right: 0, top: 0, bottom: 0 } : false}
       dragElastic={1}
@@ -116,9 +117,12 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
       onDragEnd={handleDragEnd}
       animate={{ x: exitX }}
       whileTap={isTop ? { scale: 1.05 } : {}}
+      // --- END RESTORED --- 
+      // Restore original classes, add absolute back, remove m-4
       className={cn(
         "absolute inset-0 overflow-hidden rounded-2xl touch-none bg-white dark:bg-neutral-900 cursor-grab active:cursor-grabbing border dark:border-neutral-700 shadow-md",
-        !meme.description && "border-t border-neutral-200 dark:border-neutral-700"
+        // Keep this condition separate or apply elsewhere if needed
+        // !meme.description && "border-t border-neutral-200 dark:border-neutral-700" 
       )}
     >
       <div className="relative flex h-full w-full flex-col overflow-hidden bg-white dark:bg-neutral-800">
