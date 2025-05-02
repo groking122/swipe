@@ -9,41 +9,109 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      feed_history: {
+        Row: {
+          cluster_id: string
+          id: number
+          meme_id: string
+          shown_at: string
+          user_id: string
+        }
+        Insert: {
+          cluster_id: string
+          id?: number
+          meme_id: string
+          shown_at?: string
+          user_id: string
+        }
+        Update: {
+          cluster_id?: string
+          id?: number
+          meme_id?: string
+          shown_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_history_meme_id_fkey"
+            columns: ["meme_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memes: {
         Row: {
+          cluster_id: string | null
           created_at: string
           description: string | null
           dislike_count: number
           id: string
           image_url: string
           like_count: number
+          perceptual_hash: string | null
+          share_count: number
           title: string
           user_id: string
         }
         Insert: {
+          cluster_id?: string | null
           created_at?: string
           description?: string | null
           dislike_count?: number
           id?: string
           image_url: string
           like_count?: number
+          perceptual_hash?: string | null
+          share_count?: number
           title: string
           user_id: string
         }
         Update: {
+          cluster_id?: string | null
           created_at?: string
           description?: string | null
           dislike_count?: number
           id?: string
           image_url?: string
           like_count?: number
+          perceptual_hash?: string | null
+          share_count?: number
           title?: string
           user_id?: string
         }
         Relationships: []
       }
+      user_likes: {
+        Row: {
+          created_at: string
+          meme_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          meme_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          meme_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_likes_meme_id_fkey"
+            columns: ["meme_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       votes: {
         Row: {
+          cluster_id: string | null
           created_at: string
           id: number
           meme_id: string
@@ -51,6 +119,7 @@ export type Database = {
           vote_type: string
         }
         Insert: {
+          cluster_id?: string | null
           created_at?: string
           id?: never
           meme_id: string
@@ -58,6 +127,7 @@ export type Database = {
           vote_type: string
         }
         Update: {
+          cluster_id?: string | null
           created_at?: string
           id?: never
           meme_id?: string
@@ -83,8 +153,34 @@ export type Database = {
         Args: { bucket_name: string }
         Returns: undefined
       }
+      get_disliked_cluster_counts: {
+        Args: { p_user_id: string }
+        Returns: {
+          cluster_id: string
+          count: number
+        }[]
+      }
+      get_shown_cluster_counts: {
+        Args: { p_user_id: string; p_since: string }
+        Returns: {
+          cluster_id: string
+          count: number
+        }[]
+      }
       handle_vote: {
-        Args: { p_meme_id: string; p_user_id: string; p_vote_type: string }
+        Args:
+          | {
+              p_meme_id: string
+              p_user_id: string
+              p_vote_type: string
+              p_cluster_id: string
+            }
+          | {
+              p_meme_id: string
+              p_user_id: string
+              p_vote_type: string
+              p_perceptual_hash: string
+            }
         Returns: undefined
       }
       increment: {
@@ -214,4 +310,4 @@ export const Constants = {
   public: {
     Enums: {},
   },
-} as const
+} as const 

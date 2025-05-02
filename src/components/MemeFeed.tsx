@@ -32,10 +32,9 @@ export function MemeFeed() { // Fetching all client-side
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // --- Refactored Fetch Feed Data Function ---
-  // Use useCallback to memoize the function IF its dependencies are stable
-  // However, it depends on `user`, `isLoaded`, `isSignedIn`, so memoization benefit might be limited here
-  // unless we pass dependencies explicitly. Let's keep it simple for now.
-  const fetchFeedData = async () => {
+  // Wrap in useCallback
+  const fetchFeedData = useCallback(async () => {
+    // Now depends on user, isLoaded, isSignedIn from outside
     if (!isLoaded || !isSignedIn || !user) {
       setIsLoading(false);
       setVisibleMemes([]);
@@ -82,15 +81,17 @@ export function MemeFeed() { // Fetching all client-side
     } finally {
       setIsLoading(false); // Set loading false when fetch completes or fails
     }
-  };
+  }, [user, isLoaded, isSignedIn]); // Add dependencies of fetchFeedData
   // --- End Refactored Fetch Feed Data Function ---
 
   // --- Initial Fetch Effect ---
   useEffect(() => {
+    // Only run initial fetch when user context is loaded
     if (isLoaded) {
        fetchFeedData();
     }
-  }, [isLoaded]); 
+    // Now depends on the memoized fetchFeedData and isLoaded
+  }, [isLoaded, fetchFeedData]); 
   // --- End Initial Fetch Effect ---
 
   // --- REMOVE Effect to Fetch More When Stack is Low ---
