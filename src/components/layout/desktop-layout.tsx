@@ -97,8 +97,8 @@ export default function DesktopLayout({ children, sidebarOpen, onToggleSidebar }
             className={cn(
               // Base sticky/transform/border/bg styles
               "sticky z-30 transform border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900",
-              // Restore specific transitions 
-              "transition-[width,transform] duration-300 ease-in-out",
+              // Specific transitions with ease-out
+              "transition-[width,transform] duration-300 ease-out",
               // Conditional top offset
               "top-[calc(4rem+var(--ad-height))] lg:top-16", 
               // Height adjustments
@@ -117,8 +117,8 @@ export default function DesktopLayout({ children, sidebarOpen, onToggleSidebar }
         <main className={cn(
             // Base flex styles
             "flex flex-1 flex-col w-full",
-            // Restore specific transition for margin
-            "transition-[margin-left] duration-300 ease-in-out", 
+            // Specific transition for margin with ease-out
+            "transition-[margin-left] duration-300 ease-out",
             // Margin logic ONLY applies above lg breakpoint
             showCategorySidebar
               ? (sidebarOpen ? "lg:ml-64" : "lg:ml-16") // Use prop

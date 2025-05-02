@@ -171,8 +171,11 @@ export function MemeFeed() { // Fetching all client-side
 
   // Handle empty state (after loading and no error)
   if (!isLoading && (!visibleMemes || visibleMemes.length === 0)) {
-      // Pass fetchFeedData to EmptyFeed component
-      return <EmptyFeed onRefresh={fetchFeedData} />; 
+      // Pass fetchFeedData and isSignedIn status to EmptyFeed component
+      return <EmptyFeed 
+                onRefresh={fetchFeedData} 
+                isSignedIn={isSignedIn ?? false} // Pass isSignedIn status (default to false if undefined)
+              />; 
   }
 
   return (
