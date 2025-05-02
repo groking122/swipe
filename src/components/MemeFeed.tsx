@@ -11,6 +11,8 @@ import { useToast } from "./ui/use-toast" // Import useToast
 import { useMobile } from "../hooks/use-mobile" // Import useMobile
 import { useUser } from '@clerk/nextjs'; // Import useUser
 import { LoginRequiredModal } from './login-required-modal'; // Import the modal
+import MobileCategories from './mobile/MobileCategories'; // Import MobileCategories
+import TrendingCategories from './mobile/TrendingCategories'; // Import TrendingCategories
 import { cn } from '../lib/utils';
 
 // Re-define Meme type here or import from a shared types file
@@ -180,6 +182,13 @@ export function MemeFeed() { // Fetching all client-side
 
   return (
     <>
+     {/* Conditionally render MobileCategories and TrendingCategories */}
+     {isMobile && (
+        <>
+          <MobileCategories />
+          <TrendingCategories />
+        </>
+     )}
      {/* Optional: Add a more subtle loading indicator for re-fetches */}
      {/* {isLoading && visibleMemes.length > 0 && <div className=\"absolute top-2 left-2 z-50\"><Spinner/></div>} */}
       <div className={cn(

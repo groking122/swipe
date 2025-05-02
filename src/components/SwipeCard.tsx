@@ -20,6 +20,7 @@ interface SwipeCardProps {
 export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProps) {
   const [exitX, setExitX] = useState(0)
   const [isSwiping, setIsSwiping] = useState(false)
+  const [isMounted, setIsMounted] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null)
   const isMobile = useMobile()
 
@@ -32,6 +33,12 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
   // Transform values for the like/dislike indicators
   const likeOpacity = useTransform(x, [0, 100], [0, 1])
   const dislikeOpacity = useTransform(x, [-100, 0], [1, 0])
+
+  // --- Add useEffect to track mount status ---
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  // --- End useEffect ---
 
   // Handle drag end for both mouse and touch events
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -107,18 +114,16 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
   return (
     <motion.div
       ref={cardRef}
-      // --- RESTORED STYLES AND PROPS --- 
-      style={cardStyle} 
-      drag={isTop}
-      dragConstraints={isTop ? { left: 0, right: 0, top: 0, bottom: 0 } : false}
+      style={cardStyle}
+      // Only enable drag and attach handlers if mounted and isTop
+      drag={isMounted && isTop}
+      dragConstraints={isMounted && isTop ? { left: 0, right: 0, top: 0, bottom: 0 } : false}
       dragElastic={1}
-      onDragStart={handleDragStart}
-      onDrag={handleDrag}
-      onDragEnd={handleDragEnd}
+      onDragStart={isMounted && isTop ? handleDragStart : undefined}
+      onDrag={isMounted && isTop ? handleDrag : undefined}
+      onDragEnd={isMounted && isTop ? handleDragEnd : undefined}
       animate={{ x: exitX }}
-      whileTap={isTop ? { scale: 1.05 } : {}}
-      // --- END RESTORED --- 
-      // Restore original classes, add absolute back, remove m-4
+      whileTap={isMounted && isTop ? { scale: 1.05 } : {}}
       className={cn(
         "absolute inset-0 overflow-hidden rounded-2xl touch-none bg-white dark:bg-neutral-900 cursor-grab active:cursor-grabbing border dark:border-neutral-700 shadow-md",
         // Keep this condition separate or apply elsewhere if needed

@@ -66,7 +66,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       {/* Wrap main content/desktop layout in a div to control stacking context */}
       <div className="relative z-10 flex-1 flex flex-col">
         {isMobile ? (
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          <main className="flex-1 pb-16 md:pb-0 px-4">{children}</main>
         ) : (
           <DesktopLayout 
             sidebarOpen={sidebarOpen} 

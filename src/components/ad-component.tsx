@@ -26,7 +26,7 @@ export interface AdProps {
  * - mobile: 320x100px (16:5 ratio)
  * - feed: 600x300px (2:1 ratio)
  */
-export default function AdComponent({
+export function AdComponent({
   id,
   title,
   description,
