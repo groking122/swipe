@@ -6,7 +6,6 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { ThemeToggle } from "./theme-toggle"
 import {
-  X,
   Home,
   Upload,
   User,
