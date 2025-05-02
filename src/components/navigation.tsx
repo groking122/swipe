@@ -141,7 +141,7 @@ export default function Navigation() {
                       <Button variant="ghost" size="sm" className="gap-2 text-neutral-600 dark:text-neutral-300"><Settings className="h-4 w-4" />Settings</Button>
                       <div className="flex items-center gap-1">
                         <ThemeToggle />
-                        <a href="https://x.com/YOUR_TWITTER_HANDLE" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X/Twitter" title="Follow us on X/Twitter">
+                        <a href="https://x.com/thememeswipe" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X/Twitter" title="Follow us on X/Twitter">
                           <Button variant="ghost" size="icon" className="text-neutral-600 dark:text-neutral-300 p-2">
                             <BsTwitterX size={16} />
                             <span className="sr-only">X/Twitter</span>
@@ -318,7 +318,7 @@ export default function Navigation() {
         <div className="flex items-center gap-4">
           <div className="hidden items-center gap-4 md:flex">
             <a
-              href="https://x.com/YOUR_TWITTER_HANDLE"
+              href="https://x.com/thememeswipe"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Follow us on X/Twitter"

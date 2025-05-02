@@ -21,7 +21,7 @@ export function Header() {
         <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
           <ThemeToggle />
           <a 
-            href="https://x.com/YOUR_TWITTER_HANDLE"
+            href="https://x.com/thememeswipe"
             target="_blank" 
             rel="noopener noreferrer" 
             aria-label="Follow us on X/Twitter"
