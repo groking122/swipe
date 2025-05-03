@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // Remove Image import if not directly used here anymore
 // import Image from 'next/image';
 import SwipeCard from './SwipeCard'; // Default import for the new SwipeCard
@@ -62,7 +62,12 @@ export function MemeFeed() { // Fetching all client-side
       const url = `${backendUrl}/feed/${userId}`;
       console.log(`[MemeFeed] Fetching feed from: ${url}`);
 
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -107,7 +112,7 @@ export function MemeFeed() { // Fetching all client-side
   // }, [visibleMemes, isLoading]); 
   // --- End Fetch More Effect ---
 
-  const handleSwipe = async (memeId: string, direction: 'left' | 'right') => {
+  const handleSwipe = useCallback(async (memeId: string, direction: 'left' | 'right') => {
     if (!isLoaded || !isSignedIn) {
       setIsLoginModalOpen(true); 
       return;
@@ -144,7 +149,18 @@ export function MemeFeed() { // Fetching all client-side
       setVisibleMemes(originalMemes); // Revert to original state
       toast({ title: "Error", description: "Failed to process swipe.", variant: "destructive" });
     }
-  };
+  }, [isLoaded, isSignedIn, visibleMemes, toast]);
+
+  // Memoize the feed container classes to prevent recalculation on every render
+  const feedContainerClasses = useMemo(() => {
+    return cn(
+      "relative mx-auto", 
+      isMobile 
+        ? "h-[78vh] pt-3 px-2" 
+        : "h-[80vh] pt-4 px-4 md:pb-12",
+      "max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl",
+    )
+  }, [isMobile]);
 
   // --- Render Loading State --- 
   if (isLoading && visibleMemes.length === 0) { // Only show initial full load indicator
@@ -191,12 +207,7 @@ export function MemeFeed() { // Fetching all client-side
      )}
      {/* Optional: Add a more subtle loading indicator for re-fetches */}
      {/* {isLoading && visibleMemes.length > 0 && <div className=\"absolute top-2 left-2 z-50\"><Spinner/></div>} */}
-      <div className={cn(
-        "relative mx-auto pt-3 md:pb-24", // Added mx-auto back
-        isMobile 
-          ? "h-[70vh] w-full" 
-          : "h-[80vh] max-w-2xl" // Keep max-w-2xl for desktop width limit
-      )}>
+      <div className={feedContainerClasses}>
         {visibleMemes.map((meme, index) => {
             const imageUrl = meme.image_url ?? "/placeholder.svg";
             const memeForCard = { ...meme, image_url: imageUrl };

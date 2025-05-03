@@ -45,30 +45,30 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
     setIsSwiping(false)
 
     // Determine swipe threshold based on device type
-    const swipeThreshold = isMobile ? 80 : 100
+    const swipeThreshold = isMobile ? 60 : 80
 
     if (info.offset.x > swipeThreshold) {
       // Swipe right - Like
       setExitX(window.innerWidth + 200)
-      animate(scale, 0.8, { duration: 0.2 })
+      animate(scale, 0.8, { duration: 0.2, type: "tween" })
       onSwipe(meme.id, "right")
     } else if (info.offset.x < -swipeThreshold) {
       // Swipe left - Nope
       setExitX(-window.innerWidth - 200)
-      animate(scale, 0.8, { duration: 0.2 })
+      animate(scale, 0.8, { duration: 0.2, type: "tween" })
       onSwipe(meme.id, "left")
     } else {
       // Return to center if not swiped far enough
-      animate(x, 0, { type: "spring", stiffness: 500, damping: 30 })
-      animate(y, 0, { type: "spring", stiffness: 500, damping: 30 })
-      animate(scale, 1, { duration: 0.2 })
+      animate(x, 0, { type: "spring", stiffness: 600, damping: 30 })
+      animate(y, 0, { type: "spring", stiffness: 600, damping: 30 })
+      animate(scale, 1, { duration: 0.2, type: "tween" })
     }
   }
 
   // Handle drag start
   const handleDragStart = () => {
     setIsSwiping(true)
-    animate(scale, 1.05, { duration: 0.2 })
+    animate(scale, 1.03, { duration: 0.15, type: "tween" })
   }
 
   // Handle drag movement
@@ -88,13 +88,13 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
     }
   }, [isTop, x, y, rotate, scale])
 
-  // Adjust card height for desktop
-  // Use explicit vh for mobile image container height, adjust as needed
-  // Increased desktop height to 600px to match wider container
-  const imageHeight = isMobile ? "65vh" : "620px"
+  // Use fixed height values for better performance
+  const imageHeight = isMobile 
+    ? "65vh" 
+    : "70vh" 
 
   // Calculate z-index based on position in the stack (lower index = higher z-index)
-  const zIndex = Math.max(0, 100 - index); // Example: 100 for index 0, 99 for 1, etc.
+  const zIndex = Math.max(0, 100 - index);
 
   // Apply subtle transforms to cards underneath the top one
   const cardStyle = isTop
@@ -102,40 +102,42 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
         x,
         rotate,
         scale,
-        zIndex, // Apply zIndex to top card as well
+        zIndex,
+        willChange: "transform",
       }
     : {
-        x: 0, // Reset x for non-top cards
-        rotate: 0, // Reset rotate
+        x: 0,
+        rotate: 0,
         zIndex,
-        opacity: isTop ? 1 : 0, // Only show top card
+        opacity: isTop ? 1 : 0,
       };
 
   return (
     <motion.div
       ref={cardRef}
-      style={cardStyle}
-      // Only enable drag and attach handlers if mounted and isTop
+      style={cardStyle} 
       drag={isMounted && isTop}
       dragConstraints={isMounted && isTop ? { left: 0, right: 0, top: 0, bottom: 0 } : false}
-      dragElastic={1}
+      dragElastic={0.7}
+      dragTransition={{ power: 0.1, timeConstant: 400 }}
       onDragStart={isMounted && isTop ? handleDragStart : undefined}
       onDrag={isMounted && isTop ? handleDrag : undefined}
       onDragEnd={isMounted && isTop ? handleDragEnd : undefined}
       animate={{ x: exitX }}
-      whileTap={isMounted && isTop ? { scale: 1.05 } : {}}
+      transition={{ type: "tween" }}
+      whileTap={isMounted && isTop ? { scale: 1.03 } : {}}
       className={cn(
-        "absolute inset-0 overflow-hidden rounded-2xl touch-none bg-white dark:bg-neutral-900 cursor-grab active:cursor-grabbing border dark:border-neutral-700 shadow-md",
-        // Keep this condition separate or apply elsewhere if needed
-        // !meme.description && "border-t border-neutral-200 dark:border-neutral-700" 
+        "absolute inset-0 overflow-hidden rounded-2xl touch-none",
+        "cursor-grab active:cursor-grabbing border shadow-md",
+        "bg-white dark:bg-neutral-900 dark:border-neutral-700",
       )}
     >
+      {/* Content container */}
       <div className="relative flex h-full w-full flex-col overflow-hidden bg-white dark:bg-neutral-800">
-        {/* Title bar (Now visible on mobile too if title exists) */}
+        {/* Title bar */}
         {meme.title && (
           <div className="flex items-center justify-between border-b px-3 py-2 dark:border-neutral-700">
-            <h3 className="truncate font-semibold text-base">{meme.title}</h3>
-            {/* Check for author existence before rendering */}
+            <h3 className="truncate font-semibold text-sm sm:text-base">{meme.title}</h3>
             {meme.author && (
               <div className="flex flex-shrink-0 items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                 <User className="h-3.5 w-3.5" />
@@ -145,32 +147,36 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
           </div>
         )}
 
-        {/* Meme image */}
-        {/* Added relative positioning to contain the buttons */}
-        <div style={{ height: imageHeight }} className="relative flex-grow overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+        {/* Meme image container */}
+        <div 
+          style={{ height: imageHeight }} 
+          className="relative flex-grow overflow-hidden bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center"
+        >
           <Image
-            // Use image_url directly (assuming it's now the full URL from MemeFeed)
             src={meme.image_url || "/placeholder.svg?height=600&width=400&query=funny%20meme"}
             alt={meme.title || "Meme"}
             fill
-            className="object-contain" // Changed from object-cover to show full image
+            className="object-contain"
             priority={isTop}
-            sizes="(max-width: 768px) 100vw, 768px" // Adjust sizes to match max-w-2xl roughly (2xl is 768px)
+            sizes="(max-width: 640px) 95vw, (max-width: 768px) 80vw, (max-width: 1024px) 60vw, 600px"
+            quality={isTop ? 80 : 65}
+            loading={isTop ? "eager" : "lazy"}
           />
 
-          {/* Action Buttons (Now overlaying image) */}
-          {/* Use conditional rendering based on isTop && !isSwiping && !isMobile */}
+          {/* Desktop Action Buttons */}
           {isTop && !isSwiping && !isMobile && (
-            <div className="absolute bottom-5 left-0 right-0 z-10 mx-auto flex w-48 justify-between">
+            <div className="absolute bottom-6 left-0 right-0 z-10 mx-auto flex justify-center space-x-10">
               <button
                 onClick={() => {
                   setExitX(-window.innerWidth - 200)
                   animate(scale, 0.8, { duration: 0.2 })
                   onSwipe(meme.id, "left")
                 }}
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg hover:shadow-xl transition-all hover:scale-110 active:scale-95 dark:bg-neutral-700"
+                className="flex h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 items-center justify-center rounded-full 
+                          bg-white shadow-lg hover:shadow-xl
+                          hover:scale-110 active:scale-95 dark:bg-neutral-700"
               >
-                <X className="h-8 w-8 text-rose-500" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-rose-500" />
               </button>
               <button
                 onClick={() => {
@@ -178,17 +184,19 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
                   animate(scale, 0.8, { duration: 0.2 })
                   onSwipe(meme.id, "right")
                 }}
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg hover:shadow-xl transition-all hover:scale-110 active:scale-95 dark:bg-neutral-700"
+                className="flex h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 items-center justify-center rounded-full 
+                          bg-white shadow-lg hover:shadow-xl
+                          hover:scale-110 active:scale-95 dark:bg-neutral-700"
               >
-                <Heart className="h-8 w-8 text-green-500" />
+                <Heart className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-green-500" />
               </button>
             </div>
           )}
         </div>
 
-        {/* Description Section - NEW */}
+        {/* Description Section */}
         {meme.description && (
-          <div className="border-t border-neutral-200 dark:border-neutral-700 p-3 text-sm text-neutral-700 dark:text-neutral-300">
+          <div className="border-t border-neutral-200 dark:border-neutral-700 p-3 text-xs sm:text-sm text-neutral-700 dark:text-neutral-300">
             <p>{meme.description}</p>
           </div>
         )}
@@ -197,22 +205,22 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
         {isTop && (
           <>
             <motion.div
-              className="absolute left-6 top-6 rotate-[-30deg] rounded-md border-4 border-green-500 px-6 py-2"
+              className="absolute left-4 sm:left-6 top-4 sm:top-6 rotate-[-30deg] rounded-md border-4 border-green-500 px-3 py-1 sm:px-4 sm:py-1 md:px-6 md:py-2"
               style={{ opacity: likeOpacity }}
             >
-              <span className="text-2xl font-bold text-green-500">LIKE</span>
+              <span className="text-lg sm:text-xl md:text-2xl font-bold text-green-500">LIKE</span>
             </motion.div>
 
             <motion.div
-              className="absolute right-6 top-6 rotate-[30deg] rounded-md border-4 border-rose-500 px-6 py-2"
+              className="absolute right-4 sm:right-6 top-4 sm:top-6 rotate-[30deg] rounded-md border-4 border-rose-500 px-3 py-1 sm:px-4 sm:py-1 md:px-6 md:py-2"
               style={{ opacity: dislikeOpacity }}
             >
-              <span className="text-2xl font-bold text-rose-500">NOPE</span>
+              <span className="text-lg sm:text-xl md:text-2xl font-bold text-rose-500">NOPE</span>
             </motion.div>
           </>
         )}
 
-        {/* Swipe Instructions - only shown on first card and on mobile */}
+        {/* Swipe Instructions - Only on mobile */}
         {isTop && index === 0 && isMobile && (
           <div className="absolute left-0 right-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
             <div className="rounded-full bg-black/50 px-4 py-2 text-white backdrop-blur-md">
@@ -231,8 +239,6 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
               <ThumbsUp className="h-4 w-4 text-green-500" />
               <span className="font-medium">{meme.like_count ?? 0}</span>
             </div>
-            {/* Optional: Add a comments button/indicator here if needed later */}
-            {/* <button className="flex items-center gap-1.5"><MessageSquare className="h-4 w-4" /> <span></span> </button> */}
             <div className="flex items-center gap-1.5">
               <ThumbsDown className="h-4 w-4 text-rose-500" />
               <span className="font-medium">{meme.dislike_count ?? 0}</span>
