@@ -95,71 +95,57 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50 dark:bg-neutral-900">
       <Navigation />
-      {/* Top ad banner - shown based on showAds, height measured */} 
-      {showAds && (
-        <div
-          ref={adRef}
-          className="w-full border-b border-neutral-200 bg-white px-4 dark:border-neutral-800 dark:bg-neutral-900"
-        >
-          <div className="mx-auto max-w-7xl">
+
+      {/* NEW: Main Layout Container - Centered, Max-Width, Padding */}
+      <div className="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8">
+        {/* Top ad banner - MOVED INSIDE main container */}
+        {showAds && (
+          <div
+            ref={adRef}
+            // Removed w-full, uses container padding. Added margin bottom.
+            className="mb-4 border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 sm:mb-6 lg:mb-8"
+          >
             <AdBanner />
           </div>
-        </div>
-      )}
-      {/* Main content flex container */} 
-      <div className="flex flex-1" style={{ "--ad-height": `${adHeight}px` } as React.CSSProperties}>
-          {/* Left Category Sidebar - Use Tailwind classes for responsive visibility/width */} 
+        )}
+
+        {/* Main Content Flex Container (Sidebars + Children) */}
+        <div className="flex gap-6 lg:gap-8">
+          {/* Left Category Sidebar - Adjusted sticky top, simplified height */}
           {showCategorySidebar && (
             <div
               className={cn(
-                // Base styles
-                "sticky z-30 transform border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900",
-                "transition-[width,transform] duration-300 ease-out",
-                "top-[calc(4rem+var(--ad-height))] lg:top-16", // Adjust top based on ad banner
-                "h-[calc(100vh-4rem-var(--ad-height))] lg:h-[calc(100vh-4rem)]", // Adjust height based on ad banner/nav
-                // Responsive Visibility & Width:
-                "hidden", // Hidden by default (mobile)
-                sidebarOpen 
-                  ? "lg:w-64 lg:translate-x-0 lg:block" // Open: Visible lg+, width 64
-                  : "lg:w-16 lg:translate-x-0 lg:block"  // Closed: Visible lg+, width 16
-                // Note: translate-x-full is removed as we use hidden/lg:block now
+                // Base styles - simplified stickiness and height
+                "sticky top-16 z-30 hidden h-[calc(100vh-4rem)] overflow-y-auto border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 lg:block",
+                "transition-[width] duration-300 ease-out",
+                // Responsive Width:
+                sidebarOpen ? "lg:w-64" : "lg:w-16"
               )}
             >
               <CategorySidebar onToggle={handleToggleSidebar} isOpen={sidebarOpen} />
             </div>
           )}
 
-          {/* Main content area - Takes remaining space, adjusts padding */} 
-          <main className="flex-1 flex flex-col min-w-0">
-              {/* Inner wrapper for padding and right ad sidebar */}
-              <div className="flex flex-1 min-w-0">
-                  {/* Content Area - Apply padding responsively */}
-                  <div className={cn(
-                      "flex-1 py-6 w-full min-w-0",
-                      "transition-[padding] duration-300 ease-out",
-                      "px-4 pb-16", // Added pb-16 for mobile footer space
-                      // Responsive left padding (lg+)
-                      showCategorySidebar && (sidebarOpen ? "lg:pl-64" : "lg:pl-16"),
-                      // Responsive right padding (xl+) - Apply base px-4 or specific padding if needed
-                      showAds && "xl:pr-4",
-                      // Remove mobile bottom padding on larger screens if needed
-                      "lg:pb-6" // Revert to original py-6 bottom padding on lg+
-                    )}>
-                     {children} { /* e.g., MemeFeed goes here */ }
-                  </div>
+          {/* Center Content + Right Ad Sidebar Wrapper */}
+          <div className="flex-1 flex min-w-0 gap-6 lg:gap-8">
+            {/* Main Content Area (Children) - REMOVED padding classes */}
+            <main className="flex-1 min-w-0">
+              {children} {/* e.g., MemeFeed goes here */}
+            </main>
 
-                  {/* Right Ad Sidebar - Use Tailwind classes */} 
-                  {showAds && (
-                    <div className={cn(
-                      "sticky top-16 w-80 flex-shrink-0 overflow-y-auto border-l border-neutral-200 px-4 py-6 dark:border-neutral-800",
-                      "h-[calc(100vh-4rem)]", // Full height minus nav
-                      "hidden xl:block" // Hidden until xl breakpoint
-                    )}>
-                      <AdSidebar />
-                    </div>
-                  )}
+            {/* Right Ad Sidebar - Adjusted sticky top, simplified height */}
+            {showAds && (
+              <div
+                className={cn(
+                  // Simplified stickiness and height
+                  "sticky top-16 hidden h-[calc(100vh-4rem)] w-80 flex-shrink-0 overflow-y-auto border-l border-neutral-200 px-4 py-6 dark:border-neutral-800 xl:block"
+                )}
+              >
+                <AdSidebar />
               </div>
-          </main>
+            )}
+          </div>
+        </div>
       </div>
       <Toaster />
     </div>

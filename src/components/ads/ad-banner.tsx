@@ -15,7 +15,7 @@ export default function AdBanner() {
       id="banner-1"
       title="Advertise Your Project on MemeSwipe"
       description="Reach thousands of meme enthusiasts daily"
-      imageUrl="/placeholder.svg?height=150&width=1200&text=Banner+Ad"
+      imageUrl="/banner-ad-image.png"
       ctaText="Advertise Here"
       ctaUrl="/advertise"
       variant="banner"
