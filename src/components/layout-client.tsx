@@ -14,8 +14,6 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true); 
   const pathname = usePathname();
-  const [adHeight, setAdHeight] = useState(0);
-  const adRef = useRef<HTMLDivElement>(null);
 
   // Effect for initial mount and loading state
   useEffect(() => {
@@ -57,28 +55,6 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
   const showCategorySidebar = showFullLayout;
   const showAds = showFullLayout;
 
-  // Add adHeight measurement effect (ensure dependencies are correct)
-  useEffect(() => {
-    if (adRef.current && showAds) {
-      const updateAdHeight = () => {
-        const height = adRef.current?.offsetHeight || 0;
-        setAdHeight(height);
-      };
-      updateAdHeight();
-      const resizeObserver = new ResizeObserver(updateAdHeight);
-      const currentAdRef = adRef.current;
-      resizeObserver.observe(currentAdRef);
-      return () => {
-        if (currentAdRef) {
-          resizeObserver.unobserve(currentAdRef);
-        }
-      };
-    } else {
-      setAdHeight(0);
-    }
-  }, [mounted, showAds, pathname]);
-  // --- End added logic from DesktopLayout --- 
-
   // Avoid layout shifts during hydration
   if (!mounted) {
     // Return minimal structure matching the final one
@@ -97,12 +73,10 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       <Navigation />
 
       {/* NEW: Main Layout Container - Centered, Max-Width, Padding */}
-      <div className="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-screen-xl px-4 pb-16 sm:px-6 lg:px-8">
         {/* Top ad banner - MOVED INSIDE main container */}
         {showAds && (
           <div
-            ref={adRef}
-            // Removed w-full, uses container padding. Added margin bottom.
             className="mb-4 border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 sm:mb-6 lg:mb-8"
           >
             <AdBanner />
@@ -115,10 +89,8 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
           {showCategorySidebar && (
             <div
               className={cn(
-                // Base styles - simplified stickiness and height
                 "sticky top-16 z-30 hidden h-[calc(100vh-4rem)] overflow-y-auto border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 lg:block",
                 "transition-[width] duration-300 ease-out",
-                // Responsive Width:
                 sidebarOpen ? "lg:w-64" : "lg:w-16"
               )}
             >
@@ -137,7 +109,6 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
             {showAds && (
               <div
                 className={cn(
-                  // Simplified stickiness and height
                   "sticky top-16 hidden h-[calc(100vh-4rem)] w-80 flex-shrink-0 overflow-y-auto border-l border-neutral-200 px-4 py-6 dark:border-neutral-800 xl:block"
                 )}
               >
