@@ -85,9 +85,11 @@ export async function GET(request: NextRequest) {
 
     // Apply sorting
     if (sortBy === 'mostLiked') {
-      query = query.order('like_count', { ascending: false });
+      query = query.order('like_count', { ascending: false })
+                     .order('id', { ascending: true });
     } else { // Default to newest
-      query = query.order('created_at', { ascending: false });
+      query = query.order('created_at', { ascending: false })
+                     .order('id', { ascending: true });
     }
 
     // Apply pagination

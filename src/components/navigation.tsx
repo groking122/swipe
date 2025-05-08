@@ -215,7 +215,7 @@ export default function Navigation() {
               <h1 className="text-xl font-bold tracking-tight">MemeSwipe</h1>
             </Link>
             <div className="flex items-center gap-2">
-              <ThemeToggle />
+              {/* <ThemeToggle /> */}
               <SignedIn>
                 <UserButton afterSignOutUrl="/" />
               </SignedIn>

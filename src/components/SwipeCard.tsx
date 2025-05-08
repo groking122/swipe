@@ -93,6 +93,23 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
     ? "65vh" 
     : "70vh" 
 
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
+
+  // Effect to hide swipe hint after a delay, only for the first card on mobile
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isTop && index === 0 && isMobile && showSwipeHint) {
+      timer = setTimeout(() => {
+        setShowSwipeHint(false);
+      }, 5000); // 5 seconds
+    }
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [isTop, index, isMobile, showSwipeHint]);
+
   // Calculate z-index based on position in the stack (lower index = higher z-index)
   const zIndex = Math.max(0, 100 - index);
 
@@ -192,6 +209,32 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
               </button>
             </div>
           )}
+          
+          {/* Mobile Action Buttons */}
+          {isTop && !isSwiping && isMobile && (
+            <div className="absolute bottom-4 left-0 right-0 z-10 mx-auto flex justify-center space-x-8">
+              <button
+                onClick={() => {
+                  setExitX(-window.innerWidth - 200) // Animate off-screen
+                  animate(scale, 0.8, { duration: 0.2 })
+                  onSwipe(meme.id, "left")
+                }}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-white/80 dark:bg-neutral-700/80 backdrop-blur-sm shadow-lg active:scale-90 transition-transform"
+              >
+                <X className="h-7 w-7 text-rose-500" />
+              </button>
+              <button
+                onClick={() => {
+                  setExitX(window.innerWidth + 200) // Animate off-screen
+                  animate(scale, 0.8, { duration: 0.2 })
+                  onSwipe(meme.id, "right")
+                }}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-white/80 dark:bg-neutral-700/80 backdrop-blur-sm shadow-lg active:scale-90 transition-transform"
+              >
+                <Heart className="h-7 w-7 text-green-500" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Description Section */}
@@ -220,12 +263,18 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
           </>
         )}
 
-        {/* Swipe Instructions - Only on mobile */}
-        {isTop && index === 0 && isMobile && (
-          <div className="absolute left-0 right-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
-            <div className="rounded-full bg-black/50 px-4 py-2 text-white backdrop-blur-md">
+        {/* Swipe Instructions - Only on mobile and timed */}
+        {isTop && index === 0 && isMobile && showSwipeHint && (
+          <div className="absolute left-0 right-0 top-1/2 z-10 flex -translate-y-1/2 justify-center pointer-events-none">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-full bg-black/60 dark:bg-black/70 px-4 py-2 text-white backdrop-blur-md shadow-lg"
+            >
               <p className="text-center text-sm font-medium">Swipe right to like, left to nope</p>
-            </div>
+            </motion.div>
           </div>
         )}
 

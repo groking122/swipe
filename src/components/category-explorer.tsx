@@ -11,9 +11,8 @@ import { likeMeme } from "@/lib/actions" // Assuming actions will be in lib
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, X, Check, FilterX } from "lucide-react"
+import { Search, X, Check, FilterX, ChevronLeft, ChevronRight } from "lucide-react"
 import type { Meme } from "@/types/meme" // Import Meme type from the new location
-import { useInView } from "react-intersection-observer" // Needs to be installed
 import { motion, AnimatePresence } from "framer-motion"
 import type { CategoryInfo } from "@/app/api/categories/route"; // Import the CategoryInfo type
 
@@ -37,12 +36,7 @@ export default function CategoryExplorer() {
   const [sortBy, setSortBy] = useState<"newest" | "mostLiked">("newest")
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
-  const [isFetchingMore, setIsFetchingMore] = useState(false)
   const { toast } = useToast()
-  const { ref, inView } = useInView({
-    threshold: 0.5, // Trigger when 50% visible
-    triggerOnce: false, // Keep triggering when scrolling up/down
-  })
 
   // Effect to initialize state from URL search params
   useEffect(() => {
@@ -152,23 +146,16 @@ export default function CategoryExplorer() {
     setSelectedCategories(["all"])
   }
 
-  // Fetch memes logic
+  // Fetch memes logic - simplified for pagination
   const fetchMemes = useCallback(
-    async (pageNum = 1, reset = false) => {
-      if (!reset && isFetchingMore) return; 
-      
-      if (reset) {
-        setLoading(true);
-        setMemes([]);
-        setPage(1);
-        setHasMore(true);
-      } else {
-        setIsFetchingMore(true); 
-      }
+    async (pageNumToFetch = 1) => {
+      // No need for isFetchingMore check here for simple pagination
+      setLoading(true); // Set main loading true for each page fetch
+      // setMemes([]); // Clear memes before fetching a new page if not done by page change effect
 
       try {
         const params = new URLSearchParams({
-          page: pageNum.toString(),
+          page: pageNumToFetch.toString(),
           limit: "9", 
           sort: sortBy,
         })
@@ -184,10 +171,8 @@ export default function CategoryExplorer() {
         const data = await response.json() as Meme[];
 
         setHasMore(data.length === parseInt(params.get('limit') || '9'))
-        setMemes((prev) => (reset ? data : [...prev, ...data]))
-        if (!reset && data.length > 0) { 
-            setPage(prevPage => prevPage + 1);
-        }
+        setMemes(data); // Directly set the new page's data
+        // page state will be managed by pagination controls, not incremented here
 
       } catch (error) {
         console.error("Failed to fetch memes:", error)
@@ -197,32 +182,31 @@ export default function CategoryExplorer() {
           variant: "destructive",
         })
         setHasMore(false) 
+        setMemes([]); // Clear memes on error
       } finally {
-        if (reset) {
-          setLoading(false);
-        } else {
-          setIsFetchingMore(false);
-        }
+        setLoading(false);
+        // setIsFetchingMore(false); // REMOVE
       }
     },
-    [sortBy, selectedCategories, searchQuery, toast, isFetchingMore] // Added isFetchingMore back dependency (guarded at top)
+    [sortBy, selectedCategories, searchQuery, toast] // REMOVE isFetchingMore from dependencies
   );
 
-  // Effect for initial load and filter/search changes - Will now run after state is potentially updated by URL params
+  // Effect for initial load and filter/search changes
+  useEffect(() => {
+    // When filters change, reset to page 1 and fetch
+    setPage(1); // Reset page to 1
+    // fetchMemes(1) will be triggered by the effect below reacting to page change (and filter changes)
+    // However, to ensure immediate fetch on filter change before page state updates, we can call it here.
+    // For clarity, let's ensure page is set first, then a dedicated effect handles fetching based on page.
+  }, [sortBy, selectedCategories, searchQuery]); // Only run when filters change
+
+  // Effect to fetch memes when page or filters change
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchMemes(1, true); 
-    }, 150); // Short delay to allow state updates from URL params
+      fetchMemes(page); 
+    }, 150); // Short delay to allow state updates (e.g. page reset)
     return () => clearTimeout(timer);
-  }, [sortBy, selectedCategories, searchQuery, fetchMemes]);
-
-  // Effect for infinite scrolling
-  useEffect(() => {
-    if (inView && !loading && !isFetchingMore && hasMore && memes.length > 0) { 
-      fetchMemes(page, false); 
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, memes.length, hasMore, fetchMemes]); 
+  }, [page, sortBy, selectedCategories, searchQuery, fetchMemes]); // Add page to dependencies
 
   // Handle like action
   const handleLike = async (id: string) => {
@@ -412,8 +396,8 @@ export default function CategoryExplorer() {
           )}
         </AnimatePresence>
 
-        {/* Loading Indicator for Infinite Scroll */}
-        <div ref={ref} className="h-10 flex justify-center items-center mt-8">
+        {/* Loading Indicator for Infinite Scroll - Will be replaced by Pagination Controls */}
+        {/* <div ref={ref} className="h-10 flex justify-center items-center mt-8">
           {isFetchingMore && (
             <div className="flex items-center space-x-2 text-zinc-500">
               <svg className="animate-spin h-5 w-5 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -426,6 +410,33 @@ export default function CategoryExplorer() {
            {!isFetchingMore && !hasMore && memes.length > 0 && (
              <div className="text-zinc-600">You&apos;ve reached the end!</div>
            )}
+        </div> */}
+
+        {/* Pagination Controls */}
+        <div className="flex justify-center items-center mt-8 py-4 space-x-3 sm:space-x-4">
+          <Button 
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            variant="outline"
+            className="h-10 px-4 sm:px-5 text-sm sm:text-base flex items-center gap-2 disabled:opacity-60"
+            aria-label="Go to previous page"
+          >
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span>Previous</span>
+          </Button>
+          <span className="text-sm sm:text-base font-medium text-neutral-700 dark:text-neutral-300 tabular-nums">
+            Page {page}
+          </span>
+          <Button 
+            onClick={() => setPage(p => p + 1)}
+            disabled={!hasMore || loading}
+            variant="outline"
+            className="h-10 px-4 sm:px-5 text-sm sm:text-base flex items-center gap-2 disabled:opacity-60"
+            aria-label="Go to next page"
+          >
+            <span>Next</span>
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
         </div>
       </div>
     </div>

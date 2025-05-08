@@ -156,9 +156,9 @@ export function MemeFeed() { // Fetching all client-side
     return cn(
       "relative mx-auto", 
       isMobile 
-        ? "h-[78vh] pt-3 px-2 mb-4" 
+        ? "h-[66vh] pt-3 px-2 mb-4"
         : "h-[80vh] pt-4 px-4 md:pb-12",
-      "max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl",
+      "max-w-[80vw] sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl",
     )
   }, [isMobile]);
 
