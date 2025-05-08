@@ -1,0 +1,74 @@
+## Migration Summary: TopMemes & CategoryExplorer (@meme-leaderboard to @memeswipe)
+
+This file summarizes the steps taken to integrate the `TopMemes` and `CategoryExplorer` components, along with their dependencies, from the `@meme-leaderboard` project into the `@memeswipe` project.
+
+**Goal:** Add leaderboard and category browsing functionality to MemeSwipe.
+
+**1. Component & Dependency Copying:**
+
+*   **Core Components:**
+    *   `meme-leaderboard/components/top-memes.tsx` -> `memeswipe/src/components/top-memes.tsx`
+    *   `meme-leaderboard/components/category-explorer.tsx` -> `memeswipe/src/components/category-explorer.tsx`
+    *   `meme-leaderboard/components/meme-card.tsx` -> `memeswipe/src/components/meme-card.tsx`
+    *   `meme-leaderboard/components/skeleton-card.tsx` -> `memeswipe/src/components/skeleton-card.tsx`
+*   **UI Components (Shadcn/ui style):** Copied or updated existing components in `memeswipe/src/components/ui/`:
+    *   `input.tsx`
+    *   `button.tsx`
+    *   `tabs.tsx`
+    *   `card.tsx`
+    *   `tooltip.tsx`
+    *   `toast.tsx` (adapted to use Radix primitives)
+    *   `toaster.tsx`
+*   **Hook:**
+    *   `meme-leaderboard/hooks/use-toast.ts` -> `memeswipe/src/hooks/use-toast.ts` (using a more robust implementation based on `react-hot-toast`)
+*   **Type Definition:**
+    *   Created `memeswipe/src/types/meme.ts` to define the shared `Meme` type.
+*   **Server Action:**
+    *   `meme-leaderboard/app/actions.ts` (`likeMeme`) -> `memeswipe/src/lib/actions.ts` (initially with placeholder logic).
+*   **Import Paths:** Updated all `import` statements within the copied files to use the correct paths relative to the `memeswipe` project structure (e.g., `@/components/...`, `@/lib/...`, `@/types/...`).
+
+**2. Dependency Installation:**
+
+*   Identified missing dependencies in `memeswipe` required by the copied components: `react-intersection-observer`, `@radix-ui/react-tooltip`, `date-fns`.
+*   Identified a necessary helper library for Supabase: `@supabase/auth-helpers-nextjs`.
+*   Installed these using `npm install`.
+
+**3. Supabase Integration:**
+
+*   **Schema Analysis:** Reviewed the provided Supabase schema (`memes` table) to map database columns (`id`, `image_url`, `created_at`, `like_count`, `title`, `description`, `cluster_id`) to the frontend `Meme` type and component logic. Noted `cluster_id` as the likely field for categories.
+*   **Client Setup:**
+    *   Confirmed existence of `memeswipe/src/lib/supabase/server.ts`.
+    *   Created `memeswipe/src/lib/supabase/client.ts` using `createBrowserClient` from `@supabase/ssr`.
+    *   Attempted to integrate Supabase session refresh into `memeswipe/src/middleware.ts` alongside `clerkMiddleware`. Encountered persistent TypeScript errors related to `auth().protect()` within the Clerk middleware callback.
+    *   **Workaround:** As the Clerk middleware type error could not be resolved after several attempts, we reverted the middleware changes for now. To proceed, we adopted `@supabase/auth-helpers-nextjs`'s `createServerComponentClient` within the API route handler as it resolved the type conflict for that specific use case. The middleware integration remains an outstanding issue.
+
+**4. Backend API Route Implementation:**
+
+*   **Top Memes (`/api/memes/top/route.ts`):**
+    *   Created the `GET` route handler.
+    *   Used `createServerComponentClient` to initialize Supabase.
+    *   Implemented logic to fetch memes from the `memes` table, `select` necessary columns, `order` by `like_count` (desc), apply a `limit`, and map the data to the `Meme[]` type before returning as JSON.
+    *   Resolved a TypeScript error related to cookie handling by using `createServerComponentClient`.
+*   **Search/Categories (`/api/memes/search/route.ts`):** Planned for implementation next.
+*   **Real-time Events (`/api/memes/events/route.ts`):**
+    *   Discussed the complexity vs. benefit of real-time updates for `TopMemes`.
+    *   **Decision:** Temporarily disabled real-time updates. Commented out the `EventSource` connection logic in `TopMemes.tsx` to prevent console errors.
+
+**5. Frontend Integration:**
+
+*   **Toaster:** Added the `<Toaster />` component to `memeswipe/src/app/layout.tsx` to enable notifications.
+*   **Pages:** Created dedicated pages for the new components:
+    *   `memeswipe/src/app/top-memes/page.tsx` (renders `<TopMemes />`)
+    *   `memeswipe/src/app/categories/page.tsx` (renders `<CategoryExplorer />`)
+*   **Navigation:** Updated `memeswipe/src/components/navigation.tsx`:
+    *   Added "Top Memes" and "Categories" links to the `navItems` array.
+    *   Ensured these links appear in both mobile and desktop navigation structures.
+
+**6. Remaining Tasks:**
+
+*   **Fix Clerk Middleware:** Investigate and resolve the type error in `middleware.ts` concerning `auth().protect()`. Re-integrate Supabase session refresh once Clerk is stable.
+*   **Implement `/api/memes/search` Route:** Create the API route to handle searching, filtering by category (`cluster_id`), sorting, and pagination for the `CategoryExplorer`.
+*   **Implement `likeMeme` Action:** Update `src/lib/actions.ts` to use the Supabase client to increment `like_count` in the database.
+*   **Testing:** Thoroughly test all new functionality (page rendering, data fetching, liking, searching, filtering, navigation).
+*   **Styling:** Review and adjust component styling to ensure consistency with the `memeswipe` theme.
+*   **(Optional) Real-time:** Revisit implementing the `/api/memes/events` SSE route and uncommenting the `EventSource` code if real-time updates are desired later. 
