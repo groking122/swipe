@@ -111,9 +111,9 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
     >
       <Card
         className={cn(
-          "flex flex-col flex-grow overflow-hidden bg-zinc-800/80 border-zinc-700/50 transition-all duration-300",
-          "hover:shadow-xl hover:shadow-rose-900/20 group backdrop-blur-sm",
-          "focus-within:ring-2 focus-within:ring-rose-500 focus-within:ring-offset-2 focus-within:ring-offset-zinc-900"
+          "flex flex-col flex-grow overflow-hidden transition-all duration-300", // Removed bg-zinc-800/80 and border-zinc-700/50
+          "hover:shadow-lg dark:hover:shadow-xl dark:hover:shadow-rose-900/20 group backdrop-blur-sm", // Added light mode hover, scoped existing to dark
+          "focus-within:ring-2 focus-within:ring-rose-500 focus-within:ring-offset-2 focus-within:ring-offset-zinc-900 dark:focus-within:ring-offset-background" // Adjusted ring offset for dark mode potentially
         )}
       >
         <div className="relative">
@@ -153,7 +153,7 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
           <h3 className="text-lg font-semibold truncate" title={meme.title}>
             {meme.title}
           </h3>
-          <p className="text-zinc-400 text-sm line-clamp-2 h-10 mt-1 mb-2" title={meme.description}>
+          <p className="text-muted-foreground text-sm line-clamp-2 h-10 mt-1 mb-2" title={meme.description}>
             {meme.description}
           </p>
           <div className="text-xs text-zinc-500">
@@ -162,7 +162,7 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
         </CardContent>
 
         {/* Footer Section */}
-        <CardFooter className="p-4 pt-0 flex justify-between items-center border-t border-zinc-700/50 mt-auto">
+        <CardFooter className="p-4 pt-0 flex justify-between items-center border-t mt-auto">
           <div className="flex items-center gap-1">
             <Button
               ref={likeButtonRef}
@@ -171,7 +171,7 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
               className={cn(
                 "relative overflow-visible rounded-full h-9 w-9",
                 "hover:bg-rose-500/10 group/likebtn", 
-                liked ? "text-rose-500" : "text-zinc-400 hover:text-rose-400",
+                liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-400",
                 !onLike && "opacity-50 cursor-not-allowed" // Add styling if onLike is not provided
               )}
               onClick={onLike ? handleLike : undefined} // Only attach onClick if onLike is provided

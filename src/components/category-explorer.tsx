@@ -265,14 +265,14 @@ export default function CategoryExplorer() {
   return (
     <div className="space-y-8">
       {/* Filter/Search Section */}
-      <div className="bg-zinc-800/50 p-4 sm:p-6 rounded-xl backdrop-blur-sm border border-zinc-700/50">
+      <div className="bg-card p-4 sm:p-6 rounded-xl border shadow-sm">
         {/* Search Input */}
         <form onSubmit={handleSearchSubmit} className="mb-4 sm:mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-zinc-500" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search memes..."
-              className="pl-10 bg-zinc-800 border-zinc-700 rounded-lg h-11 sm:h-12 text-base focus:ring-rose-500 focus:border-rose-500" // Added focus styles
+              className="pl-10 rounded-lg h-11 sm:h-12 text-base focus:ring-rose-500 focus:border-rose-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Search memes"
@@ -282,7 +282,7 @@ export default function CategoryExplorer() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 text-zinc-500 hover:text-zinc-300"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
                 onClick={handleClearSearch}
                 aria-label="Clear search"
               >
@@ -297,13 +297,13 @@ export default function CategoryExplorer() {
           {/* Categories */}
           <div>
             <div className="flex justify-between items-center mb-2 sm:mb-3">
-              <h3 className="text-sm sm:text-base text-zinc-400 font-medium flex items-center gap-2">Categories</h3>
+              <h3 className="text-sm sm:text-base text-foreground font-medium flex items-center gap-2">Categories</h3>
               {selectedCategories.length > 1 || (selectedCategories.length === 1 && selectedCategories[0] !== "all") ? (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={clearCategoryFilters}
-                  className="h-7 sm:h-8 px-2 text-xs sm:text-sm text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                  className="h-7 sm:h-8 px-2 text-xs sm:text-sm text-muted-foreground hover:text-accent-foreground hover:bg-accent"
                 >
                   <FilterX className="h-3.5 w-3.5 mr-1 sm:mr-1.5" />
                   Clear
@@ -330,8 +330,8 @@ export default function CategoryExplorer() {
                       transition-colors duration-150 ease-in-out border
                       ${
                         isSelected
-                          ? "bg-rose-500/20 text-rose-200 border-rose-500/50"
-                          : "bg-zinc-800/70 text-zinc-400 border-zinc-700/50 hover:bg-zinc-700/80 hover:text-zinc-300 hover:border-zinc-600"
+                          ? "bg-rose-600 text-primary-foreground border-rose-600 dark:bg-rose-500/30 dark:text-rose-200 dark:border-rose-500/50"
+                          : "bg-muted text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/30"
                       }
                     `}
                     aria-pressed={isSelected}
@@ -361,11 +361,11 @@ export default function CategoryExplorer() {
 
           {/* Sorting Tabs */}
           <div>
-            <h3 className="text-sm sm:text-base text-zinc-400 font-medium mb-2 sm:mb-3">Sort By</h3>
+            <h3 className="text-sm sm:text-base text-foreground font-medium mb-2 sm:mb-3">Sort By</h3>
             <Tabs defaultValue="newest" value={sortBy} onValueChange={(value) => setSortBy(value as "newest" | "mostLiked")}>
-              <TabsList className="grid w-full grid-cols-2 bg-zinc-800/70 border border-zinc-700/50 h-10 sm:h-11">
-                <TabsTrigger value="newest" className="text-xs sm:text-sm data-[state=active]:bg-zinc-700/80 data-[state=active]:text-zinc-100 text-zinc-400">Newest</TabsTrigger>
-                <TabsTrigger value="mostLiked" className="text-xs sm:text-sm data-[state=active]:bg-zinc-700/80 data-[state=active]:text-zinc-100 text-zinc-400">Most Liked</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-10 sm:h-11">
+                <TabsTrigger value="newest" className="text-xs sm:text-sm">Newest</TabsTrigger>
+                <TabsTrigger value="mostLiked" className="text-xs sm:text-sm">Most Liked</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
