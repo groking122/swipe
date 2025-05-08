@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '9');
   const sortBy = searchParams.get('sort') || 'newest'; // 'newest' or 'mostLiked'
   const searchQuery = searchParams.get('search');
-  let categoryParams = searchParams.getAll('categories');
+  const categoryParams = searchParams.getAll('categories');
 
   const { from, to } = getPagination(page, limit);
 
