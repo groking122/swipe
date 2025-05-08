@@ -18,31 +18,52 @@ export async function GET(request: NextRequest) {
 
   // Parse query parameters
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '9'); 
+  const limit = parseInt(searchParams.get('limit') || '9');
   const sortBy = searchParams.get('sort') || 'newest'; // 'newest' or 'mostLiked'
   const searchQuery = searchParams.get('search');
-  // Categories will now be category IDs (or the special 'all' slug)
-  const categoryParams = searchParams.getAll('categories'); 
+  let categoryParams = searchParams.getAll('categories');
 
   const { from, to } = getPagination(page, limit);
 
   try {
     let query = supabase
       .from('memes')
-      // Select all columns from memes table, and join to get category info if needed (though not strictly required for this query if just filtering)
-      // For simplicity here, we are just filtering. If you need category names alongside memes, you'd join.
       .select('id, title, description, image_url, like_count, created_at');
 
-    // Apply category filter (if provided and not 'all')
-    const selectedCategoryIds = categoryParams.filter(catId => catId !== 'all');
-    if (selectedCategoryIds.length > 0) {
-      // Find memes that are in ANY of the selected categories
-      // This requires a subquery or a join with meme_categories
-      // Using .in() with a subquery from meme_categories that selects meme_id
+    // Resolve category slugs to IDs if necessary
+    const categoryValuesToFilterBy: string[] = [];
+    const slugsToFetch: string[] = [];
+
+    for (const catParam of categoryParams) {
+      // Basic check: UUIDs are typically 36 characters long. This is a naive check.
+      // A more robust check would be a regex for UUID format.
+      if (catParam.length === 36 && catParam.includes('-')) { // Likely a UUID
+        categoryValuesToFilterBy.push(catParam);
+      } else if (catParam !== 'all') { // Likely a slug
+        slugsToFetch.push(catParam);
+      }
+    }
+
+    if (slugsToFetch.length > 0) {
+      const { data: categoriesFromSlugs, error: slugError } = await supabase
+        .from('categories')
+        .select('id')
+        .in('slug', slugsToFetch);
+
+      if (slugError) {
+        console.error("Supabase error fetching category IDs for slugs:", slugError);
+        throw slugError;
+      }
+      categoriesFromSlugs?.forEach(cat => categoryValuesToFilterBy.push(cat.id));
+    }
+    
+    const finalSelectedCategoryIds = categoryValuesToFilterBy.filter(catId => catId !== 'all' && catId); // Ensure no empty strings if any slip through
+
+    if (finalSelectedCategoryIds.length > 0) {
       const { data: memeIdsFromCategories, error: categoryFilterError } = await supabase
         .from('meme_categories')
         .select('meme_id')
-        .in('category_id', selectedCategoryIds);
+        .in('category_id', finalSelectedCategoryIds);
 
       if (categoryFilterError) {
         console.error("Supabase error fetching meme IDs for categories:", categoryFilterError);
@@ -53,7 +74,6 @@ export async function GET(request: NextRequest) {
       if (distinctMemeIds.length > 0) {
         query = query.in('id', distinctMemeIds);
       } else {
-        // If selected categories yield no memes, return empty array directly
         return NextResponse.json([]);
       }
     }

@@ -12,7 +12,7 @@ import { useMobile } from "../hooks/use-mobile" // Import useMobile
 import { useUser } from '@clerk/nextjs'; // Import useUser
 import { LoginRequiredModal } from './login-required-modal'; // Import the modal
 import MobileCategories from './mobile/MobileCategories'; // Import MobileCategories
-import TrendingCategories from './mobile/TrendingCategories'; // Import TrendingCategories
+// import TrendingCategories from './mobile/TrendingCategories'; // Import TrendingCategories
 import { cn } from '../lib/utils';
 
 // Re-define Meme type here or import from a shared types file
@@ -202,7 +202,7 @@ export function MemeFeed() { // Fetching all client-side
      {isMobile && (
         <>
           <MobileCategories />
-          <TrendingCategories />
+          {/* <TrendingCategories /> */}
         </>
      )}
      {/* Optional: Add a more subtle loading indicator for re-fetches */}
