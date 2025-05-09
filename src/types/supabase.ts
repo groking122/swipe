@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       feed_history: {
         Row: {
           cluster_id: string
@@ -41,8 +62,42 @@ export type Database = {
           },
         ]
       }
+      meme_categories: {
+        Row: {
+          assigned_at: string | null
+          category_id: string
+          meme_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          category_id: string
+          meme_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          category_id?: string
+          meme_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meme_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meme_categories_meme_id_fkey"
+            columns: ["meme_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memes: {
         Row: {
+          category: string | null
           cluster_id: string | null
           created_at: string
           description: string | null
@@ -56,6 +111,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           cluster_id?: string | null
           created_at?: string
           description?: string | null
@@ -69,6 +125,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           cluster_id?: string | null
           created_at?: string
           description?: string | null
@@ -160,6 +217,10 @@ export type Database = {
           count: number
         }[]
       }
+      get_distinct_cluster_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
       get_shown_cluster_counts: {
         Args: { p_user_id: string; p_since: string }
         Returns: {
@@ -185,6 +246,10 @@ export type Database = {
       }
       increment: {
         Args: { row_id: string; column_name: string }
+        Returns: undefined
+      }
+      increment_like_count: {
+        Args: { meme_id_param: string }
         Returns: undefined
       }
       initialize_storage_bucket: {
@@ -310,4 +375,4 @@ export const Constants = {
   public: {
     Enums: {},
   },
-} as const 
+} as const
