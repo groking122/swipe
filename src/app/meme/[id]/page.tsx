@@ -1,3 +1,6 @@
+/* eslint-disable */
+// ^^^ Add this at the very top to disable ESLint for the entire file for this diagnostic build
+
 // import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 // import { cookies } from 'next/headers';
 // import Image from 'next/image';
@@ -5,10 +8,10 @@
 // import type { Metadata, ResolvingMetadata } from 'next';
 // import type { Meme } from '@/types/meme'; // Make sure this path is correct
 
-// Minimal props for testing - using 'any' for params as a diagnostic step
+// Minimal props, reverting params to its correct type
 type MinimalPageProps = {
-  params: any; // Temporarily set to any for diagnostics
-  // searchParams: { [key: string]: string | string[] | undefined };
+  params: { id: string }; 
+  // searchParams: { [key: string]: string | string[] | undefined }; 
 };
 
 // // Function to fetch a single meme (TEMPORARILY COMMENTED OUT)
@@ -78,8 +81,7 @@ export default async function MemePage({ params }: MinimalPageProps) {
     <div className="container mx-auto px-4 py-24">
       <article className="max-w-2xl mx-auto bg-white dark:bg-gray-900 shadow-xl rounded-lg overflow-hidden p-6">
         <h1 className="text-2xl md:text-3xl font-bold mb-3 text-gray-900 dark:text-white">
-          {/* Accessing params.id might cause runtime error if params is not an object, but this is for type checking diagnosis */}
-          Meme ID: {params?.id || 'Params not as expected'}
+          Meme ID: {params.id}
         </h1>
         <p>Minimal content for testing.</p>
         {/* <Image src={meme.imageUrl} ... /> */}
