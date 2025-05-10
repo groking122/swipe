@@ -47,7 +47,7 @@ async function getMeme(id: string): Promise<Meme | null> {
 // Function to generate metadata
 export async function generateMetadata(
   { params }: Props,
-  parent: ResolvingMetadata
+  _parent: ResolvingMetadata
 ): Promise<Metadata> {
   const id = params.id;
   const meme = await getMeme(id);
