@@ -15,8 +15,96 @@ import MobileCategories from './mobile/MobileCategories'; // Import MobileCatego
 // import TrendingCategories from './mobile/TrendingCategories'; // Import TrendingCategories
 import { cn } from '../lib/utils';
 
-// Re-define Meme type here or import from a shared types file
-type Meme = Database['public']['Tables']['memes']['Row'];
+// Add helper functions to process URLs
+const getTwitterUrl = (twitter: string | null): string => {
+  if (!twitter) return "";
+  if (twitter.startsWith("http")) return twitter;
+  // Handle @username format
+  const username = twitter.startsWith("@") ? twitter.substring(1) : twitter;
+  return `https://twitter.com/${username}`;
+}
+
+const getWebsiteUrl = (website: string | null): string => {
+  if (!website) return "";
+  return website.startsWith("http") ? website : `https://${website}`;
+}
+
+// Add a new function to enhance memes with social data
+const enhanceMemeWithSocialData = async (memes: Meme[]): Promise<Meme[]> => {
+  if (!memes || memes.length === 0) return memes;
+  
+  // Get the IDs of all memes that need enhancement
+  const memeIds = memes.map(meme => meme.id);
+  
+  try {
+    // Use our internal search API to get the additional data
+    const searchParams = new URLSearchParams();
+    // Add each ID to the search params
+    memeIds.forEach(id => {
+      searchParams.append('ids', id);
+    });
+    
+    // Adjust limit to match the number of memes
+    searchParams.set('limit', memeIds.length.toString());
+    
+    console.log(`[enhanceMemeWithSocialData] Fetching social data for ${memeIds.length} memes`);
+    
+    // Fetch from our internal API
+    const response = await fetch(`/api/memes/search?${searchParams.toString()}`);
+    
+    if (!response.ok) {
+      console.error("[enhanceMemeWithSocialData] Failed to fetch additional meme data");
+      return memes;
+    }
+    
+    const additionalData: Meme[] = await response.json();
+    console.log(`[enhanceMemeWithSocialData] Received ${additionalData.length} memes with additional data`);
+    
+    // Create a map of meme data by ID for quick lookups
+    const memeDataMap = new Map<string, Meme>();
+    additionalData.forEach(meme => {
+      memeDataMap.set(meme.id, meme);
+    });
+    
+    // Enhance each meme with the additional data if available
+    return memes.map(meme => {
+      const additionalMemeData = memeDataMap.get(meme.id);
+      
+      if (additionalMemeData) {
+        return {
+          ...meme,
+          twitter: additionalMemeData.twitter || meme.twitter || null,
+          website: additionalMemeData.website || meme.website || null,
+          twitterUrl: getTwitterUrl(additionalMemeData.twitter || meme.twitter || null),
+          websiteUrl: getWebsiteUrl(additionalMemeData.website || meme.website || null)
+        };
+      }
+      
+      return {
+        ...meme,
+        twitter: meme.twitter || null,
+        website: meme.website || null,
+        twitterUrl: getTwitterUrl(meme.twitter || null),
+        websiteUrl: getWebsiteUrl(meme.website || null)
+      };
+    });
+  } catch (error) {
+    console.error("[enhanceMemeWithSocialData] Error enhancing memes:", error);
+    return memes.map(meme => ({
+      ...meme,
+      twitter: meme.twitter || null,
+      website: meme.website || null,
+      twitterUrl: getTwitterUrl(meme.twitter || null),
+      websiteUrl: getWebsiteUrl(meme.website || null)
+    }));
+  }
+};
+
+// Update the Meme type definition to include twitter and website fields
+type Meme = Database['public']['Tables']['memes']['Row'] & {
+  twitter?: string | null;
+  website?: string | null;
+};
 
 // Remove initialMemes prop if fetching client-side
 // interface MemeFeedProps {
@@ -78,9 +166,19 @@ export function MemeFeed() { // Fetching all client-side
       console.log(`[MemeFeed] Received ${memesData.length} memes from backend.`);
       if (memesData && memesData.length > 0) {
         console.log("[MemeFeed] Data for first received meme:", JSON.stringify(memesData[0]));
+        // Add debugging for twitter and website fields
+        console.log(`[MemeFeed] First meme has twitter: ${!!memesData[0].twitter}, website: ${!!memesData[0].website}`);
       }
-      // Replace the current list with the new batch
-      setVisibleMemes(memesData); 
+      
+      // Enhance memes with social data before setting state
+      const enhancedMemes = await enhanceMemeWithSocialData(memesData);
+      if (enhancedMemes.length > 0) {
+        console.log("[MemeFeed] After enhancement, first meme has twitter:", 
+          !!enhancedMemes[0].twitter, "website:", !!enhancedMemes[0].website);
+      }
+      
+      // Replace the current list with the enhanced batch
+      setVisibleMemes(enhancedMemes); 
 
     } catch (err) {
       console.error("[MemeFeed] Error fetching feed:", err);
@@ -210,7 +308,15 @@ export function MemeFeed() { // Fetching all client-side
       <div className={feedContainerClasses}>
         {visibleMemes.map((meme, index) => {
             const imageUrl = meme.image_url ?? "/placeholder.svg";
-            const memeForCard = { ...meme, image_url: imageUrl };
+            const memeForCard = { 
+              ...meme, 
+              image_url: imageUrl,
+              twitter: meme.twitter || null,
+              website: meme.website || null,
+              // Add formatted URLs that the SwipeCard component can use directly
+              twitterUrl: getTwitterUrl(meme.twitter || null),
+              websiteUrl: getWebsiteUrl(meme.website || null)
+            };
             
             return (
               <SwipeCard

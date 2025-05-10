@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabase
       .from('memes') // Your table name
-      .select('id, title, description, image_url, like_count, created_at') // Select necessary columns
+      .select('id, title, description, image_url, like_count, created_at, twitter, website') // Select necessary columns
       .order('like_count', { ascending: false }) // Order by likes (descending)
       .limit(limit) // Apply limit
 
@@ -34,7 +34,9 @@ export async function GET(request: NextRequest) {
       description: item.description,
       imageUrl: item.image_url,
       likes: item.like_count,
-      createdAt: item.created_at
+      createdAt: item.created_at,
+      twitter: item.twitter,
+      website: item.website
     })) || [];
 
     return NextResponse.json(memes)

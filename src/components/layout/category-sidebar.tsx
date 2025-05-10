@@ -39,10 +39,7 @@ interface SidebarCategory extends FetchedCategoryInfo {
 
 // Predefined "Featured" categories (can be adjusted or made dynamic later)
 const featuredCategories: SidebarCategory[] = [
-  { id: "trending", name: "Trending", slug: "trending", icon: <TrendingUp className="h-4 w-4" /> },
-  { id: "hot", name: "Hot", slug: "hot", icon: <Fire className="h-4 w-4" /> },
-  { id: "top-rated", name: "Top Rated", slug: "top-rated", icon: <Star className="h-4 w-4" /> }, // Assuming slug 'top-rated' for consistency
-  { id: "fresh", name: "Fresh", slug: "fresh", icon: <Coffee className="h-4 w-4" /> },
+  // Remove all predefined categories to effectively disable the Featured section
 ];
 
 // Placeholder icons for dynamic categories - can be mapped or a default used
@@ -60,7 +57,7 @@ export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarPro
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  const [expanded, setExpanded] = useState<string[]>(["featured", "all"])
+  const [expanded, setExpanded] = useState<string[]>(["all"])
   const [searchQuery, setSearchQuery] = useState("")
   const sidebarRef = useRef<HTMLDivElement>(null)
 
@@ -160,7 +157,7 @@ export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarPro
             "text-lg font-semibold tracking-tight",
             !isOpen && "lg:hidden"
           )}>
-            Discover
+            Categories
           </h2>
           <Button
             variant="ghost"
@@ -210,52 +207,8 @@ export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarPro
         !isOpen && "lg:hidden"
       )} id="category-sidebar-content">
         <div className="space-y-4 p-4">
-          {/* Featured Section */}
-          <div className="py-2">
-            <h3
-              className="flex cursor-pointer items-center justify-between px-3 text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-              onClick={() => toggleExpanded("featured")}
-            >
-              <span>Featured</span>
-              <ChevronRight
-                className={cn("h-4 w-4 transition-transform", expanded.includes("featured") ? "rotate-90" : "")}
-              />
-            </h3>
-            {expanded.includes("featured") && (
-              <div className="mt-2 space-y-1">
-                {featuredCategories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "relative w-full justify-start overflow-hidden px-3 py-5 text-sm font-normal",
-                      isCategoryActive(category.id, true) // Check active state as a sort/featured type
-                        ? brandClasses
-                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100",
-                    )}
-                    onClick={() => handleCategoryClick(category.id, true)} // Pass true for isFeaturedSort
-                  >
-                    {isCategoryActive(category.id, true) && (
-                      <motion.div
-                        // layoutId={`category-indicator-desktop-\${category.id}`} // Ensure unique layoutId if needed
-                        layoutId={"category-indicator-desktop-featured"} // Can be a shared one if only one active featured
-                        className={cn("absolute left-0 top-0 h-full w-1 rounded-r-full", brandIndicatorClass)}
-                        initial={false}
-                        animate={{ opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                    <span className="ml-3 mr-2">{category.icon}</span>
-                    {category.name}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
+          {/* Remove the entire Featured Section */}
+          
           {/* All Categories Section - Now Dynamic */}
           <div className="py-2">
             <h3

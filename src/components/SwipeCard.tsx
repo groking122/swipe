@@ -3,12 +3,19 @@
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { motion, useMotionValue, useTransform, type PanInfo, animate } from "framer-motion"
-import { Heart, X, ThumbsUp, ThumbsDown, User } from "lucide-react"
+import { Heart, X, ThumbsUp, ThumbsDown, User, Twitter, Globe } from "lucide-react"
 import { useMobile } from "../hooks/use-mobile" // Corrected path
 import type { Database } from "../types/supabase"; // Assuming path relative to src/components
 import { cn } from "../lib/utils"
 
-type Meme = Database['public']['Tables']['memes']['Row'] & { description?: string | null };
+type Meme = Database['public']['Tables']['memes']['Row'] & { 
+  description?: string | null;
+  twitter?: string | null;
+  website?: string | null;
+  // Add optional pre-formatted URL properties
+  twitterUrl?: string;
+  websiteUrl?: string;
+};
 
 interface SwipeCardProps {
   meme: Meme & { title?: string; author?: string; image_url: string | null };
@@ -129,6 +136,20 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
         opacity: isTop ? 1 : 0,
       };
 
+  // Add helper functions for Twitter and Website URLs (similar to MemeCard)
+  const getTwitterUrl = (twitter: string): string => {
+    if (!twitter) return "";
+    if (twitter.startsWith("http")) return twitter;
+    // Handle @username format
+    const username = twitter.startsWith("@") ? twitter.substring(1) : twitter;
+    return `https://twitter.com/${username}`;
+  }
+
+  const getWebsiteUrl = (website: string): string => {
+    if (!website) return "";
+    return website.startsWith("http") ? website : `https://${website}`;
+  }
+
   return (
     <motion.div
       ref={cardRef}
@@ -241,6 +262,37 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
         {meme.description && (
           <div className="border-t border-neutral-200 dark:border-neutral-700 p-3 text-xs sm:text-sm text-neutral-700 dark:text-neutral-300">
             <p>{meme.description}</p>
+            
+            {/* Add Social Links - Only show if either twitter or website exists */}
+            {(meme.twitter || meme.website) && (
+              <div className="flex items-center gap-3 mt-3">
+                {meme.twitter && (
+                  <a 
+                    href={meme.twitterUrl || getTwitterUrl(meme.twitter)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[#1DA1F2] hover:text-[#1DA1F2]/80 transition-colors"
+                    title={`Twitter: ${meme.twitter}`}
+                    onClick={(e) => e.stopPropagation()} // Prevent triggering card swipe
+                  >
+                    <Twitter className="h-4 w-4" />
+                  </a>
+                )}
+                
+                {meme.website && (
+                  <a 
+                    href={meme.websiteUrl || getWebsiteUrl(meme.website)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-400 transition-colors"
+                    title={`Website: ${meme.website}`}
+                    onClick={(e) => e.stopPropagation()} // Prevent triggering card swipe
+                  >
+                    <Globe className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         )}
 
