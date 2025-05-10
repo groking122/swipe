@@ -47,6 +47,8 @@ export async function uploadMemeAction(formData: FormData): Promise<ActionResult
 
   const title = formData.get("title") as string;
   const description = formData.get("description") as string | null;
+  const twitter = formData.get("twitter") as string | null;
+  const website = formData.get("website") as string | null;
   const imageFile = formData.get("image") as File | null;
 
   // Basic validation
@@ -168,6 +170,8 @@ export async function uploadMemeAction(formData: FormData): Promise<ActionResult
       user_id: userId,
       title: title,
       description: description,
+      twitter: twitter,
+      website: website,
       image_url: imageUrl,
       perceptual_hash: p_hash,
       cluster_id: p_hash

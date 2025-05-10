@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Heart, Share2, Award, MessageCircle } from "lucide-react"
+import { Heart, Share2, Award, MessageCircle, Twitter, Globe } from "lucide-react"
 // Update imports for target project
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,21 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
   const [liked, setLiked] = useState(false) // Consider persisting like state if needed
   const [showShareTooltip, setShowShareTooltip] = useState(false)
   const likeButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Handle Twitter URL format properly
+  const getTwitterUrl = (twitter: string): string => {
+    if (!twitter) return "";
+    if (twitter.startsWith("http")) return twitter;
+    // Handle @username format
+    const username = twitter.startsWith("@") ? twitter.substring(1) : twitter;
+    return `https://twitter.com/${username}`;
+  }
+
+  // Format website URL properly
+  const getWebsiteUrl = (website: string): string => {
+    if (!website) return "";
+    return website.startsWith("http") ? website : `https://${website}`;
+  }
 
   // Handle like with animation
   const handleLike = () => {
@@ -156,6 +171,34 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
           <p className="text-muted-foreground text-sm line-clamp-2 h-10 mt-1 mb-2" title={meme.description}>
             {meme.description}
           </p>
+          
+          {/* Social links */}
+          <div className="flex items-center gap-3 mt-3 mb-2">
+            {meme.twitter && (
+              <a 
+                href={getTwitterUrl(meme.twitter)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-[#1DA1F2] hover:text-[#1DA1F2]/80 transition-colors"
+                title={`Twitter: ${meme.twitter}`}
+              >
+                <Twitter className="h-4 w-4" />
+              </a>
+            )}
+            
+            {meme.website && (
+              <a 
+                href={getWebsiteUrl(meme.website)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-blue-400 transition-colors"
+                title={`Website: ${meme.website}`}
+              >
+                <Globe className="h-4 w-4" />
+              </a>
+            )}
+          </div>
+          
           <div className="text-xs text-zinc-500">
             <span>{formattedDate}</span>
           </div>

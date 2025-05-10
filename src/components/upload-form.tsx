@@ -10,7 +10,7 @@ import { Input } from "./ui/input" // Corrected path
 import { Label } from "./ui/label" // Corrected path
 import { Textarea } from "./ui/textarea" // Corrected path
 import { useToast } from "./ui/use-toast" // Corrected path
-import { Upload, X } from "lucide-react"
+import { Upload, X, Twitter, Globe } from "lucide-react" // Added Twitter and Globe icons
 import { uploadMemeAction } from "@/app/_actions/uploadMeme" // Import the server action
 import { useUser } from "@clerk/nextjs"; // Import useUser
 import { LoginRequiredModal } from "./login-required-modal"; // Import the modal
@@ -18,6 +18,8 @@ import { LoginRequiredModal } from "./login-required-modal"; // Import the modal
 export default function UploadForm() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
+  const [twitter, setTwitter] = useState("") // Added Twitter state
+  const [website, setWebsite] = useState("") // Added Website state
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -43,6 +45,29 @@ export default function UploadForm() {
     setImagePreview(null)
     const input = document.getElementById('image') as HTMLInputElement;
     if (input) input.value = '';
+  }
+
+  // Helper to normalize Twitter handle
+  const normalizeTwitterHandle = (handle: string): string => {
+    if (!handle) return "";
+    // Remove @ if present and any spaces
+    handle = handle.trim().replace(/^@/, '');
+    // Return with @ prefix if not already a URL
+    if (handle && !handle.includes('twitter.com') && !handle.includes('x.com')) {
+      return `@${handle}`;
+    }
+    return handle;
+  }
+
+  // Helper to normalize website URL
+  const normalizeWebsiteUrl = (url: string): string => {
+    if (!url) return "";
+    url = url.trim();
+    // Add https:// if missing and there's content
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      return `https://${url}`;
+    }
+    return url;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +104,13 @@ export default function UploadForm() {
     formData.append('title', title);
     if (description) {
         formData.append('description', description);
+    }
+    // Add Twitter and Website if provided
+    if (twitter) {
+        formData.append('twitter', normalizeTwitterHandle(twitter));
+    }
+    if (website) {
+        formData.append('website', normalizeWebsiteUrl(website));
     }
     formData.append('image', imageFile);
 
@@ -133,6 +165,40 @@ export default function UploadForm() {
             placeholder="Add some context to your meme"
             rows={3}
           />
+        </div>
+
+        {/* Social media fields (Added new Twitter field) */}
+        <div className="space-y-2">
+          <Label htmlFor="twitter" className="flex items-center gap-2">
+            <Twitter className="h-4 w-4 text-[#1DA1F2]" /> 
+            Twitter (optional)
+          </Label>
+          <Input
+            id="twitter"
+            value={twitter}
+            onChange={(e) => setTwitter(e.target.value)}
+            placeholder="@username or profile URL"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Add your Twitter handle to promote your account
+          </p>
+        </div>
+
+        {/* Website field (Added new Website field) */}
+        <div className="space-y-2">
+          <Label htmlFor="website" className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-blue-500" /> 
+            Website (optional)
+          </Label>
+          <Input
+            id="website"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="yourwebsite.com"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Include your website or project URL
+          </p>
         </div>
 
         <div className="space-y-2">
