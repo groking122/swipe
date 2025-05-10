@@ -4,15 +4,10 @@ import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import {
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
-  FlameIcon as Fire,
-  Star,
-  Coffee,
   Gamepad2,
   Code,
   Laugh,
@@ -36,11 +31,6 @@ interface CategorySidebarProps {
 interface SidebarCategory extends FetchedCategoryInfo {
   icon?: React.ReactNode;
 }
-
-// Predefined "Featured" categories (can be adjusted or made dynamic later)
-const featuredCategories: SidebarCategory[] = [
-  // Remove all predefined categories to effectively disable the Featured section
-];
 
 // Placeholder icons for dynamic categories - can be mapped or a default used
 const dynamicCategoryIcons: { [key: string]: React.ReactNode } = {
@@ -98,18 +88,8 @@ export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarPro
   }
 
   // Navigate to /categories page with the selected category filter
-  const handleCategoryClick = (categoryId: string, isFeaturedSort: boolean = false) => {
-    if (isFeaturedSort) {
-      let sortParam = categoryId;
-      if (categoryId === 'top-rated') sortParam = 'mostLiked';
-      // For 'trending' and 'fresh', CategoryExplorer uses 'newest'
-      if (categoryId === 'fresh' || categoryId === 'trending') sortParam = 'newest'; 
-      // 'hot' could be a direct sort if CategoryExplorer supports it, or map it.
-      // If 'hot' isn't a direct sort option in CategoryExplorer, this might need adjustment or CategoryExplorer update.
-      router.push(`/categories?sort=${sortParam}`);
-    } else {
-      router.push(`/categories?categories=${categoryId}`);
-    }
+  const handleCategoryClick = (categoryId: string) => {
+    router.push(`/categories?categories=${categoryId}`);
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -122,16 +102,10 @@ export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarPro
   const brandClasses = "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400"
   const brandIndicatorClass = "bg-rose-500"
 
-  // Helper to check if a category (or sort) is active
-  const isCategoryActive = (id: string, isSort: boolean = false) => {
+  // Helper to check if a category is active
+  const isCategoryActive = (id: string) => {
     const currentSearchParams = new URLSearchParams(searchParams?.toString() || '');
-    if (isSort) {
-      let sortParamQuery = id;
-      if (id === 'top-rated') sortParamQuery = 'mostLiked';
-      if (id === 'fresh' || id === 'trending') sortParamQuery = 'newest';
-      return currentSearchParams.get("sort") === sortParamQuery;
-    }
-    // For non-sort categories, check the 'categories' parameter.
+    // For categories, check the 'categories' parameter.
     // CategoryExplorer uses getAll('categories'), so we should check if the id is present.
     const activeCategories = currentSearchParams.getAll("categories");
     return activeCategories.includes(id);
@@ -232,13 +206,13 @@ export default function CategorySidebar({ onToggle, isOpen }: CategorySidebarPro
                       size="sm"
                       className={cn(
                         "relative w-full justify-start overflow-hidden px-3 py-5 text-sm font-normal",
-                        isCategoryActive(category.id, false) // Check active state as a category filter
+                        isCategoryActive(category.id) // Check active state as a category filter
                            ? brandClasses
                           : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100",
                       )}
-                      onClick={() => handleCategoryClick(category.id, false)} // Pass false for isFeaturedSort
+                      onClick={() => handleCategoryClick(category.id)}
                     >
-                      {isCategoryActive(category.id, false) && (
+                      {isCategoryActive(category.id) && (
                          <motion.div
                           // layoutId={`category-indicator-desktop-\${category.id}`} // Ensure unique layoutId
                           layoutId={"category-indicator-desktop-dynamic"} // Can be a shared one or make unique
