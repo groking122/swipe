@@ -88,8 +88,8 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
         : `${window.location.origin}/meme/${meme.id}`)
       : '';
     
-    // Create an optimized tweet text with hashtags and improved formatting
-    const tweetText = encodeURIComponent(`"${meme.title}" ${memeUrl} via @thememeswipe #memes #funny`);
+    // Create an optimized tweet text without the previous hardcoded hashtags
+    const tweetText = encodeURIComponent(`"${meme.title}" ${memeUrl} via @thememeswipe`);
     const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
     
     // Copy the URL to clipboard if possible
