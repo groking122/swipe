@@ -11,7 +11,6 @@ const getPagination = (page: number, limit: number) => {
 }
 
 export async function GET(request: NextRequest) {
-  const cookieStore = cookies()
   const supabase = createServerComponentClient({ cookies: cookies });
 
   const { searchParams } = new URL(request.url);
