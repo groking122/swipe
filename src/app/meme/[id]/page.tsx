@@ -47,6 +47,7 @@ async function getMeme(id: string): Promise<Meme | null> {
 // Function to generate metadata
 export async function generateMetadata(
   { params }: Props,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
   const id = params.id;
