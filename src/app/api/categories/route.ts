@@ -11,7 +11,7 @@ export interface CategoryInfo {
 
 export async function GET() {
   const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies: cookies });
 
   try {
     // Fetch id, name, and slug from the categories table
