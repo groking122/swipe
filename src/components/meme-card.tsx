@@ -5,13 +5,11 @@ import Image from "next/image"
 import { Heart, Award, Globe } from "lucide-react"
 import { BsTwitterX } from 'react-icons/bs'
 // Update imports for target project
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils" 
 import type { Meme } from "@/types/meme" // Use shared type
 import { formatDistanceToNow } from "date-fns"
 import { motion } from "framer-motion"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface MemeCardProps {
   meme: Meme
@@ -21,7 +19,6 @@ interface MemeCardProps {
 
 export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
   const [liked, setLiked] = useState(false) // Consider persisting like state if needed
-  const [showShareTooltip, setShowShareTooltip] = useState(false)
   const likeButtonRef = useRef<HTMLButtonElement>(null)
 
   // Handle Twitter URL format properly
@@ -98,11 +95,6 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
     // Copy the URL to clipboard if possible
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(memeUrl)
-        .then(() => {
-          // Show tooltip to inform user that link was copied
-          setShowShareTooltip(true);
-          setTimeout(() => setShowShareTooltip(false), 2000);
-        })
         .catch(err => console.error("Failed to copy link:", err));
     }
     
