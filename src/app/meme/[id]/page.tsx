@@ -100,7 +100,12 @@ export async function generateMetadata(
 
 
 // The page component
-export default async function MemePage({ params }: MemePageProps) { // Use renamed MemePageProps
+// Define a specific type for the Page component's props
+type PageSpecificProps = {
+  params: { id: string };
+};
+
+export default async function MemePage({ params }: PageSpecificProps) { // Use PageSpecificProps
   const meme = await getMeme(params.id);
 
   if (!meme) {
