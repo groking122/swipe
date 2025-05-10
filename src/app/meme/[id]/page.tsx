@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata, ResolvingMetadata } from 'next';
 import type { Meme } from '@/types/meme'; // Make sure this path is correct
 
-type Props = {
+// Renamed Props to MemePageProps to avoid potential naming conflicts
+type MemePageProps = {
   params: { id: string };
   searchParams: { [key: string]: string | string[] | undefined };
 };
@@ -46,7 +47,7 @@ async function getMeme(id: string): Promise<Meme | null> {
 
 // Function to generate metadata
 export async function generateMetadata(
-  { params }: Props,
+  { params }: MemePageProps, // Use renamed MemePageProps
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
@@ -99,7 +100,7 @@ export async function generateMetadata(
 
 
 // The page component
-export default async function MemePage({ params }: Props) {
+export default async function MemePage({ params }: MemePageProps) { // Use renamed MemePageProps
   const meme = await getMeme(params.id);
 
   if (!meme) {
