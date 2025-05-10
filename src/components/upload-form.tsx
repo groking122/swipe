@@ -10,7 +10,8 @@ import { Input } from "./ui/input" // Corrected path
 import { Label } from "./ui/label" // Corrected path
 import { Textarea } from "./ui/textarea" // Corrected path
 import { useToast } from "./ui/use-toast" // Corrected path
-import { Upload, X, Twitter, Globe } from "lucide-react" // Added Twitter and Globe icons
+import { Upload, X, Globe } from "lucide-react" 
+import { BsTwitterX } from 'react-icons/bs'
 import { uploadMemeAction } from "@/app/_actions/uploadMeme" // Import the server action
 import { useUser } from "@clerk/nextjs"; // Import useUser
 import { LoginRequiredModal } from "./login-required-modal"; // Import the modal
@@ -170,8 +171,8 @@ export default function UploadForm() {
         {/* Social media fields (Added new Twitter field) */}
         <div className="space-y-2">
           <Label htmlFor="twitter" className="flex items-center gap-2">
-            <Twitter className="h-4 w-4 text-[#1DA1F2]" /> 
-            Twitter (optional)
+            <BsTwitterX className="h-4 w-4 text-blue-500" /> 
+            X/Twitter (optional)
           </Label>
           <Input
             id="twitter"
@@ -180,7 +181,7 @@ export default function UploadForm() {
             placeholder="@username or profile URL"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Add your Twitter handle to promote your account
+            Add your X/Twitter handle to promote your account
           </p>
         </div>
 

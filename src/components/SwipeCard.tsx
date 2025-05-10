@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { motion, useMotionValue, useTransform, type PanInfo, animate } from "framer-motion"
-import { Heart, X, ThumbsUp, ThumbsDown, User, Twitter, Globe } from "lucide-react"
+import { Heart, X, ThumbsUp, ThumbsDown, User, Globe } from "lucide-react"
+import { BsTwitterX } from 'react-icons/bs'
 import { useMobile } from "../hooks/use-mobile" // Corrected path
 import type { Database } from "../types/supabase"; // Assuming path relative to src/components
 import { cn } from "../lib/utils"
@@ -271,11 +272,11 @@ export default function SwipeCard({ meme, onSwipe, isTop, index }: SwipeCardProp
                     href={meme.twitterUrl || getTwitterUrl(meme.twitter)} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-[#1DA1F2] hover:text-[#1DA1F2]/80 transition-colors"
-                    title={`Twitter: ${meme.twitter}`}
+                    className="text-blue-500 hover:text-blue-400 transition-colors"
+                    title={`X/Twitter: ${meme.twitter}`}
                     onClick={(e) => e.stopPropagation()} // Prevent triggering card swipe
                   >
-                    <Twitter className="h-4 w-4" />
+                    <BsTwitterX className="h-4 w-4" />
                   </a>
                 )}
                 

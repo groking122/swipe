@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation'; // Import useSearchParams
 import { MemeCard } from "@/components/meme-card"
 import { SkeletonCard } from "@/components/skeleton-card"
 import { useToast } from "@/hooks/use-toast"
-import { likeMeme } from "@/lib/actions" // Assuming actions will be in lib
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -208,35 +207,6 @@ export default function CategoryExplorer() {
     return () => clearTimeout(timer);
   }, [page, sortBy, selectedCategories, searchQuery, fetchMemes]); // Add page to dependencies
 
-  // Handle like action
-  const handleLike = async (id: string) => {
-    const originalMemes = [...memes]
-    setMemes((prevMemes) =>
-      prevMemes.map((meme) => (meme.id === id ? { ...meme, likes: meme.likes + 1 } : meme))
-    )
-    try {
-      const result = await likeMeme(id) 
-      if (!result || !result.success) { // Check if result or result.success is falsy
-        throw new Error(result?.error || "Like action failed");
-      }
-      toast({
-        title: "Liked!",
-        description: "Your vote has been counted.",
-        variant: "default", 
-      })
-    } catch (error: unknown) {
-      console.error("Failed to like meme:", error)
-      setMemes(originalMemes) 
-      // Type check error before accessing message
-      const errorMessage = error instanceof Error ? error.message : "Failed to like meme. Please try again.";
-      toast({
-        title: "Error",
-        description: errorMessage, 
-        variant: "destructive", 
-      })
-    }
-  }
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // The search is already triggered by the useEffect watching searchQuery
@@ -382,7 +352,7 @@ export default function CategoryExplorer() {
               aria-label="Memes matching criteria"
             >
               {memes.map((meme) => (
-                <MemeCard key={meme.id} meme={meme} onLike={() => handleLike(meme.id)} />
+                <MemeCard key={meme.id} meme={meme} />
               ))}
             </motion.div>
           ) : (

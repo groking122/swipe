@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Heart, Share2, Award, MessageCircle, Twitter, Globe } from "lucide-react"
+import { Heart, Award, Globe } from "lucide-react"
+import { BsTwitterX } from 'react-icons/bs'
 // Update imports for target project
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -81,27 +82,33 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
     }
   }
 
-  // Handle share (Web Share API or fallback to clipboard)
-  const handleShare = async () => {
-    const shareData = {
-      title: meme.title,
-      text: meme.description,
-      // Ensure URL is correctly formed for the target environment
-      url: typeof window !== 'undefined' ? `${window.location.origin}/meme/${meme.id}` : '#' 
+  // Handle tweet sharing
+  const tweetMeme = () => {
+    // Use the current URL if we're on a meme page, otherwise construct a link to the meme page
+    const memeUrl = typeof window !== 'undefined' 
+      ? (document.location.pathname.includes(`/meme/${meme.id}`) 
+        ? document.location.href 
+        : `${window.location.origin}/meme/${meme.id}`)
+      : '';
+    
+    // Create an optimized tweet text with hashtags and improved formatting
+    const tweetText = encodeURIComponent(`"${meme.title}" ${memeUrl} via @thememeswipe #memes #funny`);
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
+    
+    // Copy the URL to clipboard if possible
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(memeUrl)
+        .then(() => {
+          // Show tooltip to inform user that link was copied
+          setShowShareTooltip(true);
+          setTimeout(() => setShowShareTooltip(false), 2000);
+        })
+        .catch(err => console.error("Failed to copy link:", err));
     }
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData)
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(shareData.url)
-        setShowShareTooltip(true)
-        setTimeout(() => setShowShareTooltip(false), 2000)
-      }
-    } catch (error) {
-      console.error("Failed to share:", error)
-      // Optionally show an error toast
-    }
-  }
+    
+    // Open Twitter share window
+    window.open(twitterUrl, '_blank', 'noopener,noreferrer');
+  };
 
   // Determine rank styles
   const getRankColor = () => {
@@ -179,10 +186,10 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
                 href={getTwitterUrl(meme.twitter)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-[#1DA1F2] hover:text-[#1DA1F2]/80 transition-colors"
-                title={`Twitter: ${meme.twitter}`}
+                className="text-blue-500 hover:text-blue-400 transition-colors"
+                title={`X/Twitter: ${meme.twitter}`}
               >
-                <Twitter className="h-4 w-4" />
+                <BsTwitterX className="h-4 w-4" />
               </a>
             )}
             
@@ -204,64 +211,40 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
           </div>
         </CardContent>
 
-        {/* Footer Section */}
-        <CardFooter className="p-4 pt-0 flex justify-between items-center border-t mt-auto">
-          <div className="flex items-center gap-1">
-            <Button
-              ref={likeButtonRef}
-              variant="ghost"
-              size="icon"
+        {/* Footer Section - Redesigned for better UI */}
+        <div className="px-4 py-2 border-t mt-auto flex justify-between">
+          <div className="flex items-center gap-1.5">
+            <Heart
               className={cn(
-                "relative overflow-visible rounded-full h-9 w-9",
-                "hover:bg-rose-500/10 group/likebtn", 
-                liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-400",
-                !onLike && "opacity-50 cursor-not-allowed" // Add styling if onLike is not provided
+                "w-4 h-4 transition-all duration-200",
+                liked ? "fill-rose-500 text-rose-500" : "text-neutral-500",
+                !onLike && "opacity-50"
               )}
-              onClick={onLike ? handleLike : undefined} // Only attach onClick if onLike is provided
-              disabled={!onLike} // Disable button if onLike is not provided
-              aria-label={liked ? "Unlike meme" : "Like meme"} 
-              aria-pressed={liked}
-            >
-              <Heart
-                className={cn(
-                  "w-5 h-5 transition-all duration-200 ease-in-out",
-                  liked ? "fill-current scale-110" : "fill-transparent group-hover/likebtn:scale-110"
-                )}
-                strokeWidth={liked ? 0 : 2} // Fill when liked, stroke otherwise
-              />
-              {/* Optional: Add a subtle background pulse on like? */}
-            </Button>
-            <motion.span
-              key={meme.likes} // Animate count changes
-              initial={{ y: 5, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              className="font-medium text-sm min-w-[2ch] text-left" // Ensure consistent width
-            >
+              strokeWidth={1.5}
+              onClick={onLike ? handleLike : undefined}
+              role="button"
+              aria-label={liked ? "Unlike meme" : "Like meme"}
+              tabIndex={onLike ? 0 : -1}
+              style={{ cursor: onLike ? 'pointer' : 'not-allowed' }}
+            />
+            <span className="text-xs font-medium text-neutral-500">
               {meme.likes.toLocaleString()}
-            </motion.span>
+            </span>
           </div>
 
-          <div className="flex items-center gap-1">
-            {/* Placeholder for comments button/link */}
-            <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 text-zinc-400 hover:text-white hover:bg-zinc-700/50" aria-label="View comments">
-              <MessageCircle className="w-5 h-5" />
-            </Button>
-
-            <TooltipProvider delayDuration={300}>
-              <Tooltip open={showShareTooltip}>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 text-zinc-400 hover:text-white hover:bg-zinc-700/50" onClick={handleShare} aria-label="Share this meme">
-                    <Share2 className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Link copied!</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          <div 
+            className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 cursor-pointer"
+            onClick={tweetMeme}
+            role="button"
+            aria-label="Share on X/Twitter"
+            tabIndex={0}
+          >
+            <BsTwitterX className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">
+              Share
+            </span>
           </div>
-        </CardFooter>
+        </div>
       </Card>
     </motion.div>
   )

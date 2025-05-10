@@ -148,38 +148,38 @@ export default function MobileCategories() {
           <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading categories...</p>
         </div>
       ) : fetchedCategories.length > 0 ? (
-        <ScrollArea className="w-full whitespace-nowrap">
+      <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex justify-start gap-2 px-4 pb-4 pt-1 min-w-full">
             {fetchedCategories.map((category) => (
-              <Button
-                key={category.id}
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "flex h-9 items-center gap-1.5 whitespace-nowrap px-3 py-1 flex-shrink-0",
+            <Button
+              key={category.id}
+              variant="outline"
+              size="sm"
+              className={cn(
+                "flex h-9 items-center gap-1.5 whitespace-nowrap px-3 py-1 flex-shrink-0",
                   // Active state should compare the URL param with the category's ID (UUID)
                   currentCategoryParamValue === category.id 
                     ? "border-brand-200 bg-brand-50 text-brand-600 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-400"
-                    : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800",
-                )}
-                onClick={() => handleCategoryClick(category.id)}
-              >
-                {category.icon}
-                <span className="text-sm">{category.name}</span>
-                {/* {currentCategory === category.id && ( // Indicator dot might be too subtle, removed for now
-                  <motion.div
-                    layoutId="category-pill-indicator"
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-brand-500 dark:bg-brand-400"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                )} */}
-              </Button>
-            ))}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+                  : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800",
+              )}
+              onClick={() => handleCategoryClick(category.id)}
+            >
+              {category.icon}
+              <span className="text-sm">{category.name}</span>
+              {/* {currentCategory === category.id && ( // Indicator dot might be too subtle, removed for now
+                <motion.div
+                  layoutId="category-pill-indicator"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-brand-500 dark:bg-brand-400"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                />
+              )} */}
+            </Button>
+          ))}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
       ) : (
         <div className="flex justify-center items-center h-12 px-4">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">No categories found.</p>
