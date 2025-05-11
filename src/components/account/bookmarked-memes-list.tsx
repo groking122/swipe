@@ -55,7 +55,7 @@ export default function BookmarkedMemesList() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
       {bookmarkedMemes.map((meme) => (
-        <MemeCard key={meme.id} meme={meme} /> 
+        <MemeCard key={meme.id} meme={meme} initialIsBookmarked={true} /> 
       ))}
     </div>
   );

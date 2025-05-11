@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { Heart, Award, Globe } from "lucide-react"
+import { Heart, Award, Globe, Bookmark as BookmarkIcon } from "lucide-react"
 import { BsTwitterX } from 'react-icons/bs'
 // Update imports for target project
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,11 +15,19 @@ interface MemeCardProps {
   meme: Meme
   rank?: number | null // Rank is optional
   onLike?: () => void; // Made onLike optional
+  initialIsBookmarked?: boolean; // Added prop for initial bookmark state
 }
 
-export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
+export function MemeCard({ meme, rank = null, onLike, initialIsBookmarked = false }: MemeCardProps) {
   const [liked, setLiked] = useState(false) // Consider persisting like state if needed
   const likeButtonRef = useRef<HTMLButtonElement>(null)
+  const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
+
+  // Update isBookmarked if initialIsBookmarked prop changes
+  useEffect(() => {
+    setIsBookmarked(initialIsBookmarked);
+  }, [initialIsBookmarked]);
 
   // Handle Twitter URL format properly
   const getTwitterUrl = (twitter: string): string => {
@@ -91,6 +99,36 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
   const formattedDate = meme.created_at // Use standardized created_at
     ? formatDistanceToNow(new Date(meme.created_at), { addSuffix: true })
     : "Unknown date";
+
+  const handleToggleBookmark = async () => {
+    if (isBookmarkLoading) return;
+    setIsBookmarkLoading(true);
+
+    const endpoint = isBookmarked ? '/api/bookmarks/delete' : '/api/bookmarks';
+    const method = 'POST'; // Both create and delete use POST
+
+    try {
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meme_id: meme.id }),
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setIsBookmarked(!isBookmarked);
+        // Optionally: show a success toast/message
+      } else {
+        console.error("Failed to update bookmark:", result.error);
+        // Optionally: show an error toast/message
+        alert(`Error: ${result.error || 'Could not update bookmark.'}`);
+      }
+    } catch (error) {
+      console.error("Bookmark action failed:", error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Could not update bookmark.'}`);
+    }
+    setIsBookmarkLoading(false);
+  };
 
   return (
     <motion.div
@@ -186,7 +224,7 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
         </CardContent>
 
         {/* Footer Section - Redesigned for better UI */}
-        <div className="px-4 py-2 border-t mt-auto flex justify-between">
+        <div className="px-4 py-2 border-t mt-auto flex justify-between items-center">
           <div className="flex items-center gap-1.5">
             <Heart
               className={cn(
@@ -205,6 +243,25 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
               {(meme.like_count ?? 0).toLocaleString()} {/* Use standardized like_count */}
             </span>
           </div>
+
+          {/* Bookmark Icon */}
+          <button
+            onClick={handleToggleBookmark}
+            disabled={isBookmarkLoading}
+            className={cn(
+              "p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors",
+              isBookmarkLoading && "opacity-50 cursor-not-allowed"
+            )}
+            aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+          >
+            <BookmarkIcon
+              className={cn(
+                "w-4 h-4 transition-all duration-200",
+                isBookmarked ? "fill-yellow-400 text-yellow-500" : "text-neutral-500"
+              )}
+              strokeWidth={1.5}
+            />
+          </button>
         </div>
       </Card>
     </motion.div>
