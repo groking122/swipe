@@ -32,9 +32,9 @@ export async function GET(request: NextRequest) {
       id: item.id,
       title: item.title,
       description: item.description,
-      imageUrl: item.image_url,
-      likes: item.like_count,
-      createdAt: item.created_at,
+      image_url: item.image_url,
+      like_count: item.like_count,
+      created_at: item.created_at,
       twitter: item.twitter,
       website: item.website
     })) || [];

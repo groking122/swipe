@@ -79,27 +79,42 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
     }
   }
 
-  // Handle tweet sharing
-  const tweetMeme = () => {
-    // Use the current URL if we're on a meme page, otherwise construct a link to the meme page
-    const memeUrl = typeof window !== 'undefined' 
-      ? (document.location.pathname.includes(`/meme/${meme.id}`) 
-        ? document.location.href 
-        : `${window.location.origin}/meme/${meme.id}`)
-      : '';
-    
-    // Create an optimized tweet text without the previous hardcoded hashtags
-    const tweetText = encodeURIComponent(`"${meme.title}" ${memeUrl} via @thememeswipe`);
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
-    
-    // Copy the URL to clipboard if possible
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(memeUrl)
-        .catch(err => console.error("Failed to copy link:", err));
+  // Handle tweet sharing via API
+  const tweetMeme = async () => {
+    if (!meme.id || !meme.title || !meme.image_url) {
+      console.error('Meme data is incomplete for sharing.');
+      // Optionally, show a user-facing error message here
+      alert('Could not share meme: data incomplete.');
+      return;
     }
-    
-    // Open Twitter share window
-    window.open(twitterUrl, '_blank', 'noopener,noreferrer');
+
+    try {
+      const response = await fetch('/api/share-tweet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memeId: meme.id,
+          title: meme.title,
+          imageUrl: meme.image_url,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Optionally, open the created tweet URL or just notify the user
+        if (result.tweetUrl) {
+          window.open(result.tweetUrl, '_blank', 'noopener,noreferrer');
+        } else {
+          alert('Meme shared on Twitter successfully!'); // Fallback message
+        }
+      } else {
+        throw new Error(result.error || 'Failed to share meme via API.');
+      }
+    } catch (error) {
+      console.error("Error sharing meme:", error);
+      alert(`Could not share on Twitter: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   // Determine rank styles
@@ -111,8 +126,8 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
   }
 
   // Safely format date
-  const formattedDate = meme.createdAt 
-    ? formatDistanceToNow(new Date(meme.createdAt), { addSuffix: true }) 
+  const formattedDate = meme.created_at // Use standardized created_at
+    ? formatDistanceToNow(new Date(meme.created_at), { addSuffix: true })
     : "Unknown date";
 
   return (
@@ -150,8 +165,8 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
           {/* Image container */}
           <div className="relative aspect-square overflow-hidden bg-zinc-900">
             <Image
-              src={meme.imageUrl || "/placeholder.svg"} // Ensure placeholder exists
-              alt={meme.title}
+              src={meme.image_url || "/placeholder.svg"} // Use standardized image_url
+              alt={meme.title || 'Meme image'} // Handle optional title
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" // Adjusted sizes
@@ -164,12 +179,17 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
 
         {/* Content Section - flex-grow to push footer down */}
         <CardContent className="p-4 flex-grow">
-          <h3 className="text-lg font-semibold truncate" title={meme.title}>
-            {meme.title}
+          <h3 className="text-lg font-semibold truncate" title={meme.title || 'Untitled Meme'}> {/* Handle optional title */}
+            {meme.title || "Untitled Meme"}
           </h3>
-          <p className="text-muted-foreground text-sm line-clamp-2 h-10 mt-1 mb-2" title={meme.description}>
-            {meme.description}
-          </p>
+          {/* Display description only if it exists */}
+          {meme.description && (
+            <p className="text-muted-foreground text-sm line-clamp-2 h-10 mt-1 mb-2" title={meme.description}>
+              {meme.description}
+            </p>
+          )}
+          {/* Fallback for when description is not present to maintain layout */}
+          {!meme.description && <div className="h-10 mt-1 mb-2"></div>}
           
           {/* Social links */}
           <div className="flex items-center gap-3 mt-3 mb-2">
@@ -220,20 +240,7 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
               style={{ cursor: onLike ? 'pointer' : 'not-allowed' }}
             />
             <span className="text-xs font-medium text-neutral-500">
-              {meme.likes.toLocaleString()}
-            </span>
-          </div>
-
-          <div 
-            className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 cursor-pointer"
-            onClick={tweetMeme}
-            role="button"
-            aria-label="Share on X/Twitter"
-            tabIndex={0}
-          >
-            <BsTwitterX className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">
-              Share
+              {(meme.like_count ?? 0).toLocaleString()} {/* Use standardized like_count */}
             </span>
           </div>
         </div>

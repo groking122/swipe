@@ -12,6 +12,7 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import BookmarkedMemesList from "@/components/account/bookmarked-memes-list"; // New component
 
 export default function AccountPage() {
   return (
@@ -75,6 +76,12 @@ export default function AccountPage() {
             </Suspense>
           </TabsContent>
         </Tabs>
+
+        { /* Bookmarked Memes Section */ }
+        <div className="bg-white dark:bg-neutral-800 shadow-lg rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Bookmarked Memes</h2>
+          <BookmarkedMemesList />
+        </div>
       </div>
     </SignedIn>
   )

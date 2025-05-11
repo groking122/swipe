@@ -4,8 +4,10 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
 import { Button } from "./ui/button";
-import { Share2, ThumbsDown, ThumbsUp, User as UserIcon } from "lucide-react";
+import { Share2, ThumbsDown, ThumbsUp, User as UserIcon, Bookmark as BookmarkIcon } from "lucide-react";
 import { Meme } from "@/types/types"; // Updated path
+import { formatDistanceToNow } from "date-fns"; // Import date-fns function
+import { cn } from "../lib/utils"; // Assuming cn is used or can be added
 
 interface SwipeCardProps {
   meme: Meme;
@@ -24,6 +26,8 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
   const x = useMotionValue(0);
   const controls = useAnimation();
   const [constrained, setConstrained] = useState(true);
+  const [isBookmarked, setIsBookmarked] = useState(false); // Initial bookmark state (can be enhanced later)
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
 
   // Reintroduce rotate transform if needed for visual effect during drag
   const rotate = useTransform(x, [-300, 0, 300], [-20, 0, 20]); // Adjust range/degree as needed
@@ -101,6 +105,36 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
     onSwipe(decisionDirection); // Notify parent of the vote
   };
 
+  const handleToggleBookmark = async () => {
+    if (!isTopCard || isBookmarkLoading) return;
+    setIsBookmarkLoading(true);
+
+    const endpoint = isBookmarked ? '/api/bookmarks/delete' : '/api/bookmarks';
+    const method = 'POST'; // Both create and our delete (acting as POST) use POST
+
+    try {
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meme_id: meme.id }),
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setIsBookmarked(!isBookmarked);
+        // Optionally, show a toast message here
+      } else {
+        console.error("Failed to update bookmark:", result.error);
+        // Optionally, show an error toast
+        alert(`Error: ${result.error || 'Could not update bookmark.'}`);
+      }
+    } catch (error) {
+      console.error("Bookmark action failed:", error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Could not update bookmark.'}`);
+    }
+    setIsBookmarkLoading(false);
+  };
+
   // Dynamic style calculations for non-transform props
   const getBackgroundColor = () => {
     const currentX = x.get();
@@ -117,21 +151,10 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
     return Math.max(0, Math.abs(currentX) / threshold - 1) * 2; // Fade in faster
   };
 
-  // TODO: Implement actual share functionality
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: meme.title || 'Check out this meme!',
-        url: window.location.href, // Or a specific meme URL if available
-      }).then(() => {
-        console.log('Thanks for sharing!');
-      })
-      .catch(console.error);
-    } else {
-      // Fallback for browsers that don't support navigator.share
-      alert('Share functionality not supported on this browser.');
-    }
-  };
+  // Safely format date
+  const formattedDate = meme.created_at
+    ? formatDistanceToNow(new Date(meme.created_at), { addSuffix: true })
+    : "Unknown date";
 
   return (
     <motion.div
@@ -201,7 +224,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
       <div className="z-10 flex items-center justify-between border-t border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-800">
         {/* Like/Dislike Buttons & Counts */}
         <div className="flex items-center gap-3">
-          {/* Like Button + Count */}
+          {/* Like Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -214,7 +237,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           </Button>
           <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">{meme.like_count ?? 0}</span>
 
-          {/* Dislike Button + Count */}
+          {/* Dislike Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -228,17 +251,33 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           <span className="text-sm font-medium text-rose-600 dark:text-rose-400">{meme.dislike_count ?? 0}</span>
         </div>
 
-        {/* Share Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-600 active:scale-90 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:active:bg-neutral-700/70"
-          onClick={handleShare} // Use the new share handler
-          disabled={!isTopCard}
-          aria-label="Share meme"
-        >
-          <Share2 className="h-5 w-5" />
-        </Button>
+        {/* Right side: Avatar/Date and then Bookmark button */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+            {meme.user?.avatar_url ? (
+              <Image
+                src={meme.user.avatar_url}
+                alt={meme.user.username || 'User avatar'}
+                width={16}
+                height={16}
+                className="rounded-full"
+              />
+            ) : (
+              <UserIcon className="h-4 w-4" />
+            )}
+            <span>{formattedDate}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleToggleBookmark}
+            disabled={!isTopCard || isBookmarkLoading}
+            aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+            className="h-10 w-10 rounded-full text-neutral-500 hover:text-neutral-600 active:scale-90 dark:text-neutral-400 dark:hover:text-neutral-300"
+          >
+            <BookmarkIcon className={cn("h-5 w-5", isBookmarked ? "fill-yellow-400 text-yellow-500" : "")}/>
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
