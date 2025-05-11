@@ -25,7 +25,8 @@ export default function BookmarkedMemesList() {
         }
         const data = await response.json();
         setBookmarkedMemes(data as BookmarkedMemeDisplay[]);
-      } catch (err: any) {
+      } catch (e: unknown) {
+        const err = e as Error;
         console.error(err);
         setError(err.message || 'Could not load bookmarked memes.');
       }
@@ -48,7 +49,7 @@ export default function BookmarkedMemesList() {
   }
 
   if (bookmarkedMemes.length === 0) {
-    return <p className="text-neutral-500 dark:text-neutral-400">You haven't bookmarked any memes yet.</p>;
+    return <p className="text-neutral-500 dark:text-neutral-400">You haven&apos;t bookmarked any memes yet.</p>;
   }
 
   return (

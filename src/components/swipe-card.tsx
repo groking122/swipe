@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
 import { Button } from "./ui/button";
-import { Share2, ThumbsDown, ThumbsUp, User as UserIcon, Bookmark as BookmarkIcon } from "lucide-react";
+import { ThumbsDown, ThumbsUp, User as UserIcon, Bookmark as BookmarkIcon } from "lucide-react";
 import { Meme } from "@/types/types"; // Updated path
 import { formatDistanceToNow } from "date-fns"; // Import date-fns function
 import { cn } from "../lib/utils"; // Assuming cn is used or can be added

@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) { // Using POST for delete to e
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ success: true, message: 'Bookmark removed' });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const error = e as Error;
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 } 

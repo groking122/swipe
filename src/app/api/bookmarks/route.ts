@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import type { Meme } from '@/types/meme';
 
 // POST: Add a bookmark
 export async function POST(request: NextRequest) {
@@ -34,13 +35,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ success: true, bookmark: data });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const error = e as Error;
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 // GET: Fetch user's bookmarked memes
-export async function GET(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_request: NextRequest) {
   const cookieStore = cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
@@ -81,12 +84,13 @@ export async function GET(request: NextRequest) {
 
     // Transform the data to match the expected Meme[] structure, if necessary
     const memes = bookmarkedMemes?.map(bm => ({
-      ...(bm.memes as any), // Cast memes object to any or proper type
-      bookmarked_at: bm.created_at // Add bookmark timestamp if needed
+      ...(bm.memes as unknown as Meme),
+      bookmarked_at: bm.created_at
     })) || [];
 
     return NextResponse.json(memes);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const error = e as Error;
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 } 

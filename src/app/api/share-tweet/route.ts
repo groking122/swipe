@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // console.log("Media uploaded, ID:", mediaId);
 
     // 4. Post tweet with the media ID and your desired text
-    const tweetText = `"${title}" via @thememeswipe`; // Customize as needed. No hashtags as per previous request.
+    // const tweetText = `\"${title}\" via @thememeswipe`; // Customize as needed. No hashtags as per previous request.
     // console.log("Posting tweet:", tweetText, "with media ID:", mediaId);
     // const { data: createdTweet } = await readWriteClient.v2.tweet(tweetText, {
     //   media: { media_ids: [mediaId] }
@@ -72,10 +72,11 @@ export async function POST(request: NextRequest) {
       // tweetUrl: tweetUrl // Use this when implemented
     });
 
-  } catch (error: any) {
-    console.error('[API /api/share-tweet] Error:', error);
+  } catch (e: unknown) {
+    const err = e as Error;
+    console.error('[API /api/share-tweet] Error:', err);
     // Check if it's a Twitter API error object for more specific messages
-    // if (error.data && error.data.errors) { ... }
-    return NextResponse.json({ error: error.message || 'Failed to share on Twitter' }, { status: 500 });
+    // if (err.data && err.data.errors) { ... }
+    return NextResponse.json({ error: err.message || 'Failed to share on Twitter' }, { status: 500 });
   }
 } 

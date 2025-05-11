@@ -79,44 +79,6 @@ export function MemeCard({ meme, rank = null, onLike }: MemeCardProps) {
     }
   }
 
-  // Handle tweet sharing via API
-  const tweetMeme = async () => {
-    if (!meme.id || !meme.title || !meme.image_url) {
-      console.error('Meme data is incomplete for sharing.');
-      // Optionally, show a user-facing error message here
-      alert('Could not share meme: data incomplete.');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/share-tweet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memeId: meme.id,
-          title: meme.title,
-          imageUrl: meme.image_url,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        // Optionally, open the created tweet URL or just notify the user
-        if (result.tweetUrl) {
-          window.open(result.tweetUrl, '_blank', 'noopener,noreferrer');
-        } else {
-          alert('Meme shared on Twitter successfully!'); // Fallback message
-        }
-      } else {
-        throw new Error(result.error || 'Failed to share meme via API.');
-      }
-    } catch (error) {
-      console.error("Error sharing meme:", error);
-      alert(`Could not share on Twitter: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
   // Determine rank styles
   const getRankColor = () => {
     if (rank === 1) return "text-yellow-400 border-yellow-400/50 bg-yellow-400/10"
