@@ -13,12 +13,12 @@ export default function AdBanner() {
   return (
     <AdComponent
       id="banner-1"
-      title="Advertise Your Project on MemeSwipe"
-      description="Reach thousands of meme enthusiasts daily"
-      imageUrl="/banner-ad-image.png"
+      title=""
+      description=""
+      imageUrl="/chillguy_banner.png"
       ctaText="Advertise Here"
-      ctaUrl="/advertise"
-      variant="banner"
+      ctaUrl="https://x.com/chillguycto"
+      variant="banner-visual"
       onDismiss={() => setDismissed(true)}
     />
   )

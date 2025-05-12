@@ -12,7 +12,7 @@ const ads = [
     description: "Reach thousands of meme enthusiasts with your project or company",
     imageUrl: "/placeholder.svg?height=250&width=300&text=Your+Project+Here",
     ctaText: "Advertise Here",
-    ctaUrl: "/advertise",
+    ctaUrl: "https://x.com/thememeswipe",
   },
   {
     id: "ad2",
@@ -20,7 +20,7 @@ const ads = [
     description: "Connect with our creative community",
     imageUrl: "/placeholder.svg?height=250&width=300&text=Your+Brand",
     ctaText: "Learn More",
-    ctaUrl: "/advertise",
+    ctaUrl: "https://x.com/thememeswipe",
   },
 ]
 
